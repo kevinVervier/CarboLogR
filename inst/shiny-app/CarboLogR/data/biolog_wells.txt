@@ -1,0 +1,285 @@
+PM1	A02	L-Arabinose	11708064	carbohydrates	6
+PM1	A03	N-Acetyl-D-Glucosamine	439174	carbohydrates	8
+PM1	A04	D-Saccharic Acid	33037	carboxylic acid	8
+PM1	A05	Succinic Acid	1110	carboxylic acid	2
+PM1	A06	D-Galactose	6036	carbohydrates	8
+PM1	A07	L-aspartic acid	5960	amino acid	2
+PM1	A08	L-proline	145742	amino acid	7
+PM1	A09	D-Alanine	71080  	amino acid	7
+PM1	A10	D-Trehalose	7427  	carbohydrates	8
+PM1	A11	D-Mannose	18950	carbohydrates	8
+PM1	A12	Dulcitol	11850	carbohydrates	8
+PM1	B01	D-Serine	71077  	amino acid	7
+PM1	B02	D-Sorbitol	5780	sugar alcohol	8
+PM1	B03	Glycerol	753	sugar alcohol	7
+PM1	B04	L-Fucose	17106	carbohydrates	8
+PM1	B05	D-Glucuronic Acid 	94715	carboxylic acid	8
+PM1	B06	D-Gluconic Acid	10690	carboxylic acid	8
+PM1	B07	"D,L-alpha-Glycerol-Phosphate"	754	sugar alcohol	5
+PM1	B08	D-Xylose 	135191   	carbohydrates	8
+PM1	B09	L-Lactic Acid	107689	carboxylic acid	7
+PM1	B10	Formic Acid	284	carboxylic acid	7
+PM1	B11	D-Mannitol	6251	carbohydrates	8
+PM1	B12	L-Glutamic Acid	33032	amino acid	1
+PM1	C01	D-Glucose6-Phosphate	90473457	carbohydrates	4
+PM1	C02	D-galactonic acid gamma-lactone 	97165	carboxylic acid	8
+PM1	C03	D-Malic Acid	525	carboxylic acid	5
+PM1	C04	D-Ribose 	10975657	carbohydrates	8
+PM1	C05	Tween 20	443314	sugar alcohol	4
+PM1	C06	L-Rhamnose 	25310	carbohydrates	8
+PM1	C07	D-Fructose	5984	carbohydrates	6
+PM1	C08	Acetic Acid	176	carboxylic acid	7
+PM1	C09	alpha-D-Glucose	79025	carbohydrates	8
+PM1	C10	Maltose	6255	carbohydrates	8
+PM1	C11	D-Melibiose	440658	carbohydrates	8
+PM1	C12	Thymidine	5789	nucleoside /nucleotide	4
+PM1	D01	L-Asparagine	6267	amino acid	2
+PM1	D02	D-Aspartic Acid 	83887  	amino acid	2
+PM1	D03	D-Glucosaminic Acid	73563	carbohydrates	8
+PM1	D04	"1,2 Propanediol "	1030	sugar alcohol	7
+PM1	D05	Tween 40 	92329579	sugar alcohol	4
+PM1	D06	Alpha-ketoglutaric acid 	51	carboxylic acid	1
+PM1	D07	alpha-Ketobutyric Acid	58	carboxylic acid	7
+PM1	D08	alpha-Methyl-D-Galactoside	76935	carbohydrates	8
+PM1	D09	alpha-D-Lactose	84571	carbohydrates	8
+PM1	D10	Lactulose	11333	carbohydrates	8
+PM1	D11	Sucrose	5988	carbohydrates	8
+PM1	D12	Uridine	6029	nucleoside /nucleotide	6
+PM1	E01	L-Glutamine	5961	amino acid	1
+PM1	E02	m-Tartaric Acid	447315	carboxylic acid	5
+PM1	E03	D-Glucose-1-phosphate	65533	carbohydrates	8
+PM1	E04	D-fructose-6-phosphate 	69507	carbohydrates	6
+PM1	E05	Tween 80 	86289060	sugar alcohol	4
+PM1	E06	Alpha-Hydroxyglutaric acid 	43	carboxylic acid	5
+PM1	E07	alpha Hydroxybutyric Acid	11266	carboxylic acid	7
+PM1	E08	Methyl beta-D-glucoside 	445238	carbohydrates	8
+PM1	E09	Adonitol	6912	carbohydrates	6
+PM1	E10	Maltotriose	192826	carbohydrates	8
+PM1	E11	Deoxyadenosine	13730	nucleoside /nucleotide	4
+PM1	E12	Adenosine 	60961  	nucleoside /nucleotide	6
+PM1	F01	Glycyl-L-Aspartic Acid	97363	amino acid	1
+PM1	F02	Citric Acid 	311	carboxylic acid	5
+PM1	F03	m-Inositol	3720	sugar alcohol	3
+PM1	F04	D-Threonine 	69435	amino acid	7
+PM1	F05	Fumaric Acid	444972	carboxylic acid	2
+PM1	F06	Bromo Succinic Acid	73557	carboxylic acid	2
+PM1	F07	Propionic Acid	1032	carboxylic acid	7
+PM1	F08	Mucic Acid	3037582	carboxylic acid	8
+PM1	F09	Glycolic Acid	757	carboxylic acid	7
+PM1	F10	Glyoxylic Acid	760	carboxylic acid	7
+PM1	F11	D-Cellobiose	10712	carbohydrates	8
+PM1	F12	Inosine	6021	nucleoside /nucleotide	6
+PM1	G01	Glycyl-L-Glutamic Acid	99278	carboxylic acid	1
+PM1	G02	Tricarballylic Acid	14925	carboxylic acid	1
+PM1	G03	L-Serine	5951	amino acid	7
+PM1	G04	L-Threonine	6288 	amino acid	7
+PM1	G05	L-Alanine	5950	amino acid	7
+PM1	G06	L-Alanyl-Glycine	79094  	carboxylic acid	2
+PM1	G07	Acetoacetic Acid	96	carboxylic acid	7
+PM1	G08	N-Acetyl-beta-D-mannosamine	11096158	carbohydrates	8
+PM1	G09	Mono Methyl Succinate	77487	carboxylic acid	2
+PM1	G10	Methyl Pyruvate	11748 	carboxylic acid	7
+PM1	G11	D-Malic Acid	525	carboxylic acid	5
+PM1	G12	L-Malic Acid	222656	carboxylic acid	5
+PM1	H01	Glycyl-L-Proline	3013625	amino acid	1
+PM1	H02	p-Hydroxy Phenyl Acetic Acid	127	carboxylic acid	3
+PM1	H03	m-Hydroxy Phenyl Acetic Acid	12122	carboxylic acid	3
+PM1	H04	Tyramine	5610	amino acid	3
+PM1	H05	D-Psicose	151197	carbohydrates	6
+PM1	H06	L-Lyxose	98621168 	carbohydrates	6
+PM1	H07	Glucuronamide	636367	carbohydrates	8
+PM1	H08	Pyruvic Acid	1060	carboxylic acid	7
+PM1	H09	L-Galactonic Acid-gamma-Lactone	97165	carboxylic acid	8
+PM1	H10	D-Galacturonic Acid	439215	carbohydrates	8
+PM1	H11	Phenylethylamine	1001	amino acid	3
+PM1	H12	2-Aminoethanol	700	sugar alcohol	7
+PM2A	A02	Chondroitin Sulfate C	24766	carbohydrates	9
+PM2A	A03	alpha-Cyclodextrin	444913	carbohydrates	9
+PM2A	A04	beta-Cyclodextrin	444041	carbohydrates	9
+PM2A	A05	gamma-Cyclodextrin	5287407	carbohydrates	9
+PM2A	A06	Dextrin	62698	carbohydrates	9
+PM2A	A07	Gelatin	5761	carbohydrates	5
+PM2A	A08	Glycogen	439177	carbohydrates	9
+PM2A	A09	Inulin	441708	carbohydrates	6
+PM2A	A10	Laminarin	439306	carbohydrates	9
+PM2A	A11	Mannan	6251 	carbohydrates	7
+PM2A	A12	Pectin	441476 	carbohydrates	7
+PM2A	B01	N-Acetyl-D-galactosamine	84265	carbohydrates	7
+PM2A	B02	N-Acetyl-Neuraminic Acid	92132133	carboxylic acid	9
+PM2A	B03	beta-D-Allose	448388	carbohydrates	7
+PM2A	B04	Amygdalin	656516	carbohydrates	9
+PM2A	B05	D-Arabinose	66308	carbohydrates	4
+PM2A	B06	D-Arabitol	94154	sugar alcohol	4
+PM2A	B07	L-Arabitol	439255	sugar alcohol	4
+PM2A	B08	Arbutin	440936	carbohydrates	9
+PM2A	B09	2-Deoxy-D-ribose	5460005	carbohydrates	1
+PM2A	B10	i-Erythritol	222285	sugar alcohol	2
+PM2A	B11	D-Fucose	444200	carbohydrates	7
+PM2A	B12	3-O-beta-D-Galacto-pyranosyl-D-Arabinose	193417	carbohydrates	9
+PM2A	C01	Gentiobiose	441422	carbohydrates	9
+PM2A	C02	L-Glucose	10954115	carbohydrates	7
+PM2A	C03	Lactitol	157355	sugar alcohol	9
+PM2A	C04	D-Melezitose	92817	carbohydrates	9
+PM2A	C05	Maltitol	493591	sugar alcohol	9
+PM2A	C06	alpha-Methyl-D-glucoside	64947	carbohydrates	7
+PM2A	C07	Beta-Methyl-D-Galactoside	94214	carbohydrates	7
+PM2A	C08	3-Methyl Glucose	8973	carbohydrates	7
+PM2A	C09	beta-Methyl-D-Glucuronic Acid	25201129	carboxylic acid	7
+PM2A	C10	alpha-Methyl-D-mannoside	101798	carbohydrates	7
+PM2A	C11	beta-Methyl-D-xyloside	11768891	carbohydrates	7
+PM2A	C12	Palatinose	439559	carbohydrates	9
+PM2A	D01	D-Raffinose	10542	carbohydrates	9
+PM2A	D02	Salicin	439503	carbohydrates	9
+PM2A	D03	Sedoheptulosan	5460956	carbohydrates	7
+PM2A	D04	L-Sorbose	439837	carbohydrates	4
+PM2A	D05	Stachyose	439531	carbohydrates	9
+PM2A	D06	D-Tagatose	439396	carbohydrates	4
+PM2A	D07	Turanose	5460935	carbohydrates	9
+PM2A	D08	Xylitol	6912	sugar alcohol	4
+PM2A	D09	N-Acetyl-D-Glucosaminitol	165206	sugar alcohol	7
+PM2A	D10	gamma-Amino butyric acid	119	amino acid	8
+PM2A	D11	beta-Amino Valeric Acid	2733736	amino acid	5
+PM2A	D12	Butyric Acid	264	carboxylic acid	8
+PM2A	E01	Capric Acid	2969 	carboxylic acid	6
+PM2A	E02	Caproic Acid	8892	carboxylic acid	8
+PM2A	E03	Citraconic Acid	643798	carboxylic acid	3
+PM2A	E04	Citramalic Acid	1081	carboxylic acid	2
+PM2A	E05	D-Glucosamine	439213	carbohydrates	7
+PM2A	E06	2-hydroxy-benzoic acid	338	carboxylic acid	5
+PM2A	E07	4-hydroxy benzoic acid	135	carboxylic acid	5
+PM2A	E08	beta-hydroxy butyric acid	441	carboxylic acid	1
+PM2A	E09	gamma-Hydroxybutyric acid	10413	carboxylic acid	8
+PM2A	E10	alpha-Ketovaleric acid	74563	carboxylic acid	8
+PM2A	E11	Itaconic Acid	811	carboxylic acid	3
+PM2A	E12	5-keto-D-gluconic acid	5460352	carboxylic acid	4
+PM2A	F01	D-Lactic Acid Methyl Ester	637514	carboxylic acid	10
+PM2A	F02	Malonic Acid	867	carboxylic acid	1
+PM2A	F03	Melibionic Acid	193574 	carboxylic acid	9
+PM2A	F04	Oxalic Acid	971	carboxylic acid	1
+PM2A	F05	Oxalomalic Acid	439620	carboxylic acid	2
+PM2A	F06	Quinic Acid	6508	carboxylic acid	4
+PM2A	F07	"D-Ribono-1,4-lactone"	111064	carboxylic acid	4
+PM2A	F08	Sebacic Acid	5192	carboxylic acid	6
+PM2A	F09	Sorbic Acid	643460	carboxylic acid	5
+PM2A	F10	Succinamic Acid	12522	carboxylic acid	3
+PM2A	F11	D-Tartaric Acid	439655	carboxylic acid	2
+PM2A	F12	L-Tartaric Acid	444305	carboxylic acid	2
+PM2A	G01	Acetamide	178	carboxylic acid	10
+PM2A	G02	L-Alaninamide	444939	amino acid	10
+PM2A	G03	N-Acetyl-L-glutamic acid	70914 	amino acid	3
+PM2A	G04	L-Arginine	6322	amino acid	8
+PM2A	G05	Glycine	750	amino acid	10
+PM2A	G06	L-Histidine	6274 	amino acid	3
+PM2A	G07	L-Homoserine	12647	amino acid	8
+PM2A	G08	hydroxy-L-proline	5810	amino acid	1
+PM2A	G09	L-Isoleucine	6306	amino acid	1
+PM2A	G10	L-Leucine	6106	amino acid	1
+PM2A	G11	L-Lysine	 5962 	amino acid	8
+PM2A	G12	L-Methionine	6137	amino acid	8
+PM2A	H01	L-Ornithine	6262	amino acid	8
+PM2A	H02	L-Phenylalanine	6140	amino acid	5
+PM2A	H03	L-Pyroglutamic Acid	7405 	amino acid	3
+PM2A	H04	L-Valine	6287	amino acid	1
+PM2A	H05	"D,L-Carnitine"	288	amino acid	1
+PM2A	H06	Sec-Butylamine	24874 	amino acid	10
+PM2A	H07	"D,L-Octopamine"	102484	carbohydrates	5
+PM2A	H08	Putrescine	1045	amino acid	8
+PM2A	H09	Dihydroxyacetone	670	carbohydrates	1
+PM2A	H10	"2,3-butanediol"	262	sugar alcohol	1
+PM2A	H11	"2,3-Butanone"	6569	carbohydrates	10
+PM2A	H12	3-hydroxy-2-butanone	179	carbohydrates	10
+AN	A02	N-Acetyl-D-Galactosamine	35717	carbohydrates	8
+AN	A03	N-Acetyl-D-Glucosamine	439174	carbohydrates	8
+AN	A04	N-Acetyl-beta-dmannosamine	44119773	carbohydrates	8
+AN	A05	Adonitol	6912	carbohydrates	6
+AN	A06	Amygdalin	656516	carbohydrates	10
+AN	A07	D-Arabitol	94154	sugar alcohol	6
+AN	A08	Arbutin	440936	carbohydrates	10
+AN	A09	D-Cellobiose	439178	carbohydrates	10
+AN	A10	alpha-Cyclodextrin	444913	carbohydrates	10
+AN	A11	beta-Cyclodextrin	444041	carbohydrates	10
+AN	A12	Dextrin	62698	carbohydrates	10
+AN	B01	Dulcitol	11850	carbohydrates	8
+AN	B02	i-Erythritol	222285	sugar alcohol	3
+AN	B03	D-Fructose	5984	carbohydrates	6
+AN	B04	L-Fucose	17106	carbohydrates	8
+AN	B05	D-Galactose	6036	carbohydrates	8
+AN	B06	D-Galacturonic Acid	439215	carbohydrates	8
+AN	B07	Gentiobiose	441422	carbohydrates	10
+AN	B08	D-Gluconic Acid	10690	carbohydrates	8
+AN	B09	D-Glucosaminic Acid	73563	carbohydrates	8
+AN	B10	alpha-D-Glucose	79025	carbohydrates	8
+AN	B11	alpha-D-Glucose1-Phosphate	90478222	carbohydrates	10
+AN	B12	D-Glucose6-Phosphate	90473457	carbohydrates	5
+AN	C01	Glycerol	753	sugar alcohol	3
+AN	C02	"D,L-alpha-Glycerol-Phosphate"	754	carbohydrates	3
+AN	C03	m-Inositol	3720	sugar alcohol	1
+AN	C04	alpha-D-Lactose	84571	carbohydrates	10
+AN	C05	Lactulose	11333	carbohydrates	10
+AN	C06	Maltose	6255	carbohydrates	10
+AN	C07	Maltotriose	192826	carbohydrates	10
+AN	C08	D-Mannitol	6251	carbohydrates	8
+AN	C09	D-Mannose	18950	carbohydrates	8
+AN	C10	D-Melezitose	92817	carbohydrates	10
+AN	C11	D-Melibiose	440658	carbohydrates	10
+AN	C12	3-Methyl-D-Glucose	8973	carbohydrates	8
+AN	D01	alpha-Methyl-D-Galactoside	76935	carbohydrates	8
+AN	D02	beta-Methyl-D-Galactoside	94214	carbohydrates	8
+AN	D03	alpha-Methyl-D-Glucoside	64947	carbohydrates	8
+AN	D04	beta-Methyl-D-Glucoside	445238	carbohydrates	8
+AN	D05	Palatinose	439559	carbohydrates	10
+AN	D06	D-Raffinose	10542	carbohydrates	10
+AN	D07	L-Rhamnose	25310	carbohydrates	8
+AN	D08	Salicin	439503	carbohydrates	10
+AN	D09	D-Sorbitol	5780	carbohydrates	8
+AN	D10	Stachyose	439531	carbohydrates	10
+AN	D11	Sucrose	5988	carbohydrates	10
+AN	D12	D-Trehalose	7427	carbohydrates	10
+AN	E01	Turanose	5460935	carbohydrates	10
+AN	E02	Acetic Acid	176	carboxylic acid	9
+AN	E03	Formic Acid	284	carboxylic acid	9
+AN	E04	Fumaric Acid	444972	carboxylic acid	2
+AN	E05	Glyoxylic Acid	760	carboxylic acid	9
+AN	E06	alpha Hydroxybutyric Acid	11266	carboxylic acid	9
+AN	E07	beta-Hydroxybutyric Acid	441	carboxylic acid	7
+AN	E08	Itaconic Acid	811	carboxylic acid	2
+AN	E09	alpha-Ketobutyric Acid	58	carboxylic acid	7
+AN	E10	alpha-Ketovaleric Acid	74563	carboxylic acid	7
+AN	E11	DL-Lactic acid	612	carboxylic acid	9
+AN	E12	L-Lactic Acid	107689	carboxylic acid	9
+AN	F01	D-Lactic Acid Methyl Ester	637514	carboxylic acid	9
+AN	F02	D-Malic Acid	525	carboxylic acid	3
+AN	F03	L-Malic Acid	222656	carboxylic acid	3
+AN	F04	Propionic Acid	1032	carboxylic acid	9
+AN	F05	Pyruvic Acid	1060	carboxylic acid	7
+AN	F06	Pyruvic Acid Methyl Ester	11748	carboxylic acid	7
+AN	F07	D-Saccharic Acid	33037	carbohydrates	8
+AN	F08	Succinamic Acid	12522	carboxylic acid	2
+AN	F09	Succinic Acid	1110	carboxylic acid	2
+AN	F10	Succinic Acid Mono-Methyl Ester	77487	carboxylic acid	2
+AN	F11	m-Tartaric Acid	447315	carboxylic acid	3
+AN	F12	Urocanic Acid	736715	carboxylic acid	1
+AN	G01	Alaninamide	444939	carboxylic acid	9
+AN	G02	L-Alanine	5950	amino acid	9
+AN	G03	L-Alanyl-L-glutamine	123935	amino acid	4
+AN	G04	L-Alanyl-L-Histidine	71627165	amino acid	4
+AN	G05	L-Alanyl-L-Threonine	6427004	amino acid	3
+AN	G06	L-Asparagine	6267	amino acid	2
+AN	G07	L-Glutamic Acid	33032	amino acid	4
+AN	G08	L-Glutamine	5961	amino acid	4
+AN	G09	Glycyl-L-Aspartic Acid	97363	amino acid	4
+AN	G10	Glycyl-L-Glutamine	123913	amino acid	4
+AN	G11	Glycyl-L-Methionine	6992293	amino acid	4
+AN	G12	Glycyl-L-Proline	3013625	amino acid	4
+AN	H01	L-Methionine	6137	amino acid	7
+AN	H02	L-Phenylalanine	6140	amino acid	1
+AN	H03	L-Serine	5951	amino acid	7
+AN	H04	L-Threonine	6288	amino acid	7
+AN	H05	L-Valine	6287	amino acid	7
+AN	H06	L-aspartic acid	5960	amino acid	2
+AN	H07	Deoxyadenosine	13730	nucleoside /nucleotide	5
+AN	H08	Inosine	6021	nucleoside /nucleotide	6
+AN	H09	Thymidine	5789	nucleoside /nucleotide	5
+AN	H10	Uridine	6029	nucleoside /nucleotide	6
+AN	H11	Thymidine monophosphate	9700	nucleoside /nucleotide	5
+AN	H12	Uridine-Monophosphate	6030	nucleoside /nucleotide	5

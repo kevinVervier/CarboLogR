@@ -1,9 +1,10 @@
 Package: CarboLogR
-Title: What the Package Does (one line, title case)
-Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Title: Quality control and Statistical Analysis for Phenotyping 96-wells Plates
+Version: 0.0.1
+Authors@R: person("Kevin", "Vervier", email = "kv4@sanger.ac.uk", role = c("aut", "cre"))
+Description: This package aims at providing a framework for analyzing 96-wells plate data, including Biolog carbon utilization assays. Quality control step is available for any assay. The statistical analysis part relies on manual curation and annotation for Biolog PM1, PM2B, AN plates.
 Depends: R (>= 3.5.0)
-License: What license is it under?
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 6.1.1
