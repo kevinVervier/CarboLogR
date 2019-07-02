@@ -6,7 +6,7 @@
 shinyServer(function(input, output,session) {
 
   # plate data location
-  shinyDirChoose(input, 'plate_directory', session=session, roots=c('home'=home_dir,getVolumes()()),defaultRoot = 'home')
+  shinyDirChoose(input, 'plate_directory', session=session, roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()),defaultRoot = 'library')
 
   path_plate <- reactive({
     return(print(parseDirPath(roots=c('home'=home_dir,getVolumes()()), input$plate_directory)))
