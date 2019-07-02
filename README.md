@@ -12,7 +12,10 @@
 
 User can easily install the package directly from Github.
 ```
-library(devtools)
+if(!require(devtools)){
+  install.packages('devtools')
+  library(devtools)
+ }
 devtools::install_github('kevinVervier/CarboLogR')
 library(CarboLogR)
 
