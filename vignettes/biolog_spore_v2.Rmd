@@ -1,0 +1,1033 @@
+---
+title: "Spore-forming and non spore-forming bacteria growth kinetics"
+author: "Kevin Vervier"
+date: "29 June 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 1000)
+```
+
+In this document, we compare growth kinetics for 9 different bacteria with different spore-forming properties (presence or absence of it). We build on the previous studies regarding QC (biolog_qc) and kinetic features (biolog_kinetics).
+
+## Load data
+
+```{r}
+
+input_folder = '~/biolog_input/spore/'
+```
+
+We extract all the organism names found in this folder part of this project:
+
+```{r}
+files <- list.files(path=input_folder,pattern = '.csv',full.names = FALSE)
+length(files)
+
+organisms <- NULL
+for(f in files){
+  tmp = read.csv(paste(input_folder,f,sep=''),header=TRUE)
+  #add microbe name
+  organisms = c(organisms,paste(strsplit(f,split='_')[[1]][1:2],collapse='_'))
+}
+
+organisms <- unique(organisms)
+length(organisms)
+```
+
+## Quality control 
+
+In this section, we filter the replicates and the wells that do not follow the QC rules: comparable number of wells with growth (at the replicate level) and similar growth across replicates (at the well level).
+
+```{r,echo=F}
+# Function that extract kinetics features from a plate
+#Here we need to fix a bug in the fit function when a blank column is given (grep issue changes in grepl)#
+SummarizeGrowthByPlate <- function (plate,record.name='test', t_trim = 0, bg_correct = "min", plot_fit = FALSE) {
+  if (is.data.frame(plate) != TRUE) {
+    stop("The 'plate' input data must be formatted as a data.frame.", 
+         call. = FALSE)
+  }
+  
+  # FIX 1
+  if (sum(grepl("time", names(plate), ignore.case = TRUE)) != 
+      1) {
+    stop("There must be exactly one column named 'time' in the 'plate' data.frame.", 
+         call. = FALSE)
+  }
+  names(plate)[grep("time", names(plate), ignore.case = TRUE)] <- "time"
+  if (length(names(plate)) < 2) {
+    stop("You must have at least two columns in the 'plate' data.frame: one for time, and the other for absorbance.")
+  }
+  if (bg_correct == "blank") {
+    # FIX 2
+    if (sum(grepl("blank", names(plate), ignore.case = TRUE)) != 
+        1) {
+      stop("There must be exactly one column named 'blank' in the 'plate' data.frame if you have selected the bg_correct 'plate' option.", 
+           call. = FALSE)
+    }
+    names(plate)[grep("blank", names(plate), ignore.case = TRUE)] <- "blank"
+  }
+  n <- length(plate) - sum(grepl("time|plate", names(plate), 
+                                 ignore.case = TRUE))
+  d_gc <- data.frame(sample = character(n), k = numeric(n), 
+                     n0 = numeric(n), r = numeric(n), t_mid = numeric(n), 
+                     t_gen = numeric(n), auc_l = numeric(n), auc_e = numeric(n), 
+                     sigma = numeric(n), note = character(n), stringsAsFactors = FALSE)
+  if (plot_fit == TRUE) {
+    # grDevices::cairo_pdf(plot_file, width = 12, height = 8)
+    #old_par <- graphics::par(mfcol = c(8, 1+ncol(plate)%/%8), mar = c(0.25,                                                                     0.25, 0.25, 0.25))
+    old_par <- graphics::par(mfcol = c(1, length(plate)), mar = c(0.25,                                                                     0.25, 0.25, 0.25))
+    idx_to_plot <- length(plate$time) * 1:20/20
+    y_lim_max <- max(plate[, setdiff(names(plate), "time")]) - 
+      min(plate[, setdiff(names(plate), "time")])
+  }
+  n <- 1
+  for (col_name in names(plate)) {
+    if (!col_name %in% c("time", "blank")) {
+      if (bg_correct == "blank") {
+        gc_fit <- SummarizeGrowth(data_t = plate$time, 
+                                  data_n = plate[, col_name], t_trim = t_trim, 
+                                  bg_correct = bg_correct, blank = plate$blank)
+      }
+      else {
+        gc_fit <- SummarizeGrowth(data_t = plate$time, 
+                                  data_n = plate[, col_name], t_trim = t_trim, 
+                                  bg_correct = bg_correct)
+      }
+      d_gc$sample[n] <- col_name
+      d_gc$k[n] <- gc_fit$vals$k
+      d_gc$n0[n] <- gc_fit$vals$n0
+      d_gc$r[n] <- gc_fit$vals$r
+      d_gc$t_mid[n] <- gc_fit$vals$t_mid
+      d_gc$t_gen[n] <- gc_fit$vals$t_gen
+      d_gc$auc_l[n] <- gc_fit$vals$auc_l
+      d_gc$auc_e[n] <- gc_fit$vals$auc_e
+      d_gc$sigma[n] <- gc_fit$vals$sigma
+      d_gc$note[n] <- gc_fit$vals$note
+      n <- n + 1
+      if (plot_fit == TRUE) {
+        graphics::plot(gc_fit$data$t[idx_to_plot], gc_fit$data$N[idx_to_plot], 
+                       pch = 20, ylim = c(0, y_lim_max), cex = 0.6, 
+                       xaxt = "n", yaxt = "n")
+        graphics::text(x = max(gc_fit$data$t)/4, y = y_lim_max, 
+                       labels = col_name, pos = 1)
+        graphics::title(main=record.name)
+        if (gc_fit$vals$note == "") {
+          graphics::lines(gc_fit$data$t, stats::predict(gc_fit$model), 
+                          col = "red")
+        }
+      }
+    }
+  }
+  if (plot_fit == TRUE) {
+    #    grDevices::dev.off()
+  }
+  return(d_gc)
+}
+
+```
+
+```{r,results="asis",fig.height = 1, fig.width = 10, fig.align = "center"}
+if(!require(growthcurver)){
+  install.packages('growthcurver') 
+  require(growthcurver)
+}
+
+# create a DB to store the kinetics features of all bacteria
+DB = list()
+
+for (organism in organisms){
+  cat('  \n')  
+  cat("### Growth rate modelling for", organism, "  \n") 
+  
+  # retrieve all files for this organism
+  orga.f <- list.files(path=input_folder,pattern = organism,full.names = TRUE)
+  
+  # loop over the replicates
+  reps <- list()
+  for(i in 1:length(orga.f)){
+    reps[[i]] <- read.csv(orga.f[i],header=TRUE,skip=10)[,1:97] # remove potential NA last colum
+  }
+  names(reps) = orga.f
+  #check if all records have the same length
+  if(length(unique(sapply(reps,nrow))) > 1){ 
+    #cat('Warning: different number of time points! the smallest number will be used for the rest of the analysis.')
+    
+    # Based on the preliminary data, the missing time point is 24h (last).
+    min.row = min(sapply(reps,nrow))
+    for(i in 1:length(reps)){
+      reps[[i]] <- reps[[i]][1:min.row,]
+    }
+  }else{
+    min.row = nrow(reps[[1]])
+  }
+  
+  # the Growthcurver pakcage requires a 'blank' column to make background correction
+  for(i in 1:length(orga.f)){
+    colnames(reps[[i]])[1] <- 'time'
+    colnames(reps[[i]])[2] <- 'blank'
+  }
+  cat('  \n') 
+  
+  # fit growth model for each record
+  suppressWarnings(gc_out <- lapply(1:length(reps),function(i) SummarizeGrowthByPlate(plate=reps[[i]],record.name=names(reps)[i],bg_correct = 'blank',plot_fit = FALSE)[1:95,]))
+  # note: remove the final row as it is empty
+  cat('  \n') 
+  cat("#### Filter low-quality replicates for", organism, "  \n")
+  cat('  \n')
+  # get number of low quality fit wells
+  l.lq = sapply(gc_out,function(x) length(which(x$note == '')))
+  # TMP: define threshold as lower than average quality across replicates and 1 standard deviation
+  thresh = mean(l.lq) - sd(l.lq)
+  idx = which(l.lq < thresh)
+  # filter wells with note (bad fit)
+  if(length(idx) >0){
+    reps[idx] <- NULL
+    cat(orga.f[idx],'were filtered out!  \n')
+  }else{
+    cat('No replicate was filtered out!  \n')
+  }
+  cat('  \n')
+  cat('  \n')
+  cat('It remains',length(reps),'replicates for', organism,'\n')
+  cat('  \n')
+  
+  suppressWarnings(gc_out <- lapply(1:length(reps),function(i)SummarizeGrowthByPlate(plate=reps[[i]],record.name=names(reps)[i],bg_correct = 'blank',plot_fit = FALSE)[1:95,]))
+  cat('  \n') 
+  cat("#### Filter low-quality wells for", organism, "  \n")  
+  cat('  \n')
+  # get wells with decent fit in each replicate
+  gc_out_filt <- lapply(gc_out,function(x) which(x$note ==''))
+  # get wells with decent fits in a given proportion of the replicates
+  gc_out_filt_idx <- as.numeric(names(which(table(unlist(gc_out_filt)) >= floor(0.5*length(reps)) ))) # THRESHOLD CAN BE CHANGED (default: 0.5)
+  cat('  \n')   
+  if(length(gc_out_filt_idx) == 0){
+    cat('All wells were filtered out!\n')
+  }else{
+    cat('Wells',colnames(reps[[1]])[gc_out_filt_idx+2],'were kept!\n')
+  }
+  cat('  \n')  
+  #rerun only with the wells with a proper fit
+  filt.reps <- lapply(1:length(reps),function(i) reps[[i]][,c(1,2,gc_out_filt_idx+2)] )
+  names(filt.reps) <- names(gc_out_filt)
+  
+  suppressWarnings(gc_out_filt_well <- lapply(1:length(filt.reps),function(i)SummarizeGrowthByPlate(plate=filt.reps[[i]],record.name=names(filt.reps)[i],bg_correct = 'blank',plot_fit = FALSE)))
+  
+  cat('  \n') 
+  
+  DB[[organism]] = gc_out_filt_well
+}
+```
+
+## Kinetic features processing
+
+In this section, we process the extracted features by averaging them across replicates from the same bacteria.
+
+```{r}
+av.profiles <- lapply(DB,function(x){
+  # Average at the well level
+  if(nrow(x[[1]]) > 1){
+    
+    tmp = lapply(x,function(y) apply(y[-nrow(y),-c(1,10)],2,as.numeric))
+    tmp2 = Reduce('+',tmp)/length(tmp)
+    row.names(tmp2) = x[[1]][-nrow(x[[1]]),1]
+    return(tmp2)
+  }else{
+    return(NULL)
+  }
+})
+```
+
+## Creating filled profiles
+
+To compare the profiles we need to fill the missing wells from each profile:
+```{r}
+all_wells <- sort(unique(unlist(sapply(av.profiles,row.names))))
+length(all_wells)
+```
+
+```{r}
+av.profiles.fill = lapply(1:length(av.profiles),function(i){
+  idx = all_wells[which(!(all_wells%in%row.names(av.profiles[[i]])))]
+  if(length(idx) < length(all_wells)){
+    tmp = rbind(av.profiles[[i]],matrix(0,nrow=length(idx),ncol=ncol(av.profiles[[i]])))
+    rownames(tmp) = c(rownames(av.profiles[[i]]),idx)
+    tmp = tmp[order(row.names(tmp)),]
+    return(tmp)
+  }else{
+    tmp = matrix(0,nrow=length(idx),ncol=ncol(av.profiles[[1]]))
+    rownames(tmp) = idx
+    tmp = tmp[order(row.names(tmp)),]
+    colnames(tmp) = colnames(av.profiles[[1]])
+    return(tmp)
+  }
+})
+```
+
+```{r,eval=F}
+save(av.profiles.fill,file='biolog_fill_average_profiles_v2.Rdata')
+```
+
+## Phenotypic information
+
+In this section, we compare the spore-forming to non spore-forming organisms. The phenotypes are extracted from Phylogenic tree provided by Hilary: 
+
+```{r}
+pheno = c('NSF','SF','SF','NSF','NSF','NSF','SF','SF',NA,'NSF')
+names(pheno) = names(av.profiles)
+clades = c('blue','red','blue','blue','red','red','blue','red',NA,'red')
+names(clades) = names(av.profiles)
+```
+
+
+
+## Comparison of average profiles
+
+```{r}
+load('biolog_fill_average_profiles_v2.Rdata')
+```
+
+### Combine all features:
+
+```{r}
+tmp = lapply(av.profiles.fill,function(x) as.vector(x[,1:4]))
+tmp = do.call('rbind',tmp)
+
+pvals = NULL
+## Univariate test
+for(i in 1:ncol(tmp)){
+  pval = t.test(tmp[which(pheno=='NSF'),i], tmp[which(pheno=='SF'),i])$p.val
+  pvals <- c(pvals,pval)
+  if(pval < 0.05 & !is.nan(pval)) cat('Well',colnames(tmp)[i],t.test(tmp[which(pheno=='NSF'),i], tmp[which(pheno=='SF'),i])$p.val,'\n')
+}
+
+
+##PCA
+#pca <- prcomp(tmp, scale. = TRUE)
+#ggbiplot(pca, obs.scale = 1, var.scale = 1,varname.size = 0,var.axes = F,
+#         groups = pheno, ellipse = TRUE, circle = FALSE) +
+#  scale_color_discrete(name = '') +
+#  theme(legend.direction = 'horizontal', legend.position = 'top')
+
+tmp2 <- scale(tmp)
+d <- dist(tmp2)
+#plot(hclust(d),labels = pheno)
+
+```
+
+### Presence/Absence approach
+
+```{r}
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1] != 0))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+
+d <- dist(tmp,method = 'binary')
+
+# hcd <- as.dendrogram(hclust(d))
+# colLab <- function(n) {
+#     if (is.leaf(n)) {
+#         a <- attributes(n)
+#         labCol <- clades[which(names(clades) == a$label)]
+#         names(labCol) <- NULL
+#         newLabel <- pheno[which(names(pheno) == a$label)]
+#         names(newLabel) <- NULL
+#         
+#         attr(n, "nodePar") <- c(a$nodePar, lab.col = labCol)
+#         attr(n, "label") <- newLabel
+#         
+#     }
+#     n
+# }
+# using dendrapply
+#clusDendro = dendrapply(hcd, colLab)
+# make plot
+#plot(clusDendro)
+
+```
+
+Each well close from signifance is represented by the contingency table (row: presence/absence of growth, column: spore-forming or not).
+```{r}
+pvals <- NULL
+# Fisher test per well
+for(j in 1:ncol(tmp)){
+  if(any(tmp[-9,j] == 1)){
+  tmp2 = fisher.test(x = tmp[,j],y=pheno)$p.val
+  pvals = c(pvals,tmp2)
+  if(tmp2 < 0.1 & !is.nan(tmp2)){
+    cat('Well',rownames(av.profiles.fill[[1]])[j], 'found to be close from significance',tmp2,'\n')
+    print(table(tmp[,j],pheno))
+  }
+  }else{
+      pvals = c(pvals,NA)
+  }
+}
+```
+
+It appears that the `r sum(pvals<0.1)` wells that are close enough from significance correspond to Glycerol (C01).
+
+
+Here is the pvalues for each well (sorted):
+```{r}
+names(pvals) <- rownames(av.profiles.fill[[1]])
+head(pvals[order(pvals,decreasing=FALSE)])
+
+
+```
+
+
+### Well grouping
+
+Here we use data extracted from KEGG and cheminformatics to group wells into 10 clusters with functional annotations for each of them:
+```{r}
+load('biolog_kegg_wells.Rdata')
+#load mapping between well names and well number
+wells = read.table('biolog_wells.txt',sep='\t')
+
+idx = which(colnames(reps[[1]]) %in% all_wells)-2
+
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1] != 0))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+
+# find clusters
+sub.wells = wells[idx,]
+colnames(tmp) = sub.wells[,2]
+write.table(t(tmp),file = 'biolog_v2_binary_growth.txt',quote = FALSE)
+```
+
+
+First, we rank the clusters by the proportion of wells with growth, in the spore and non spore-forming groups:
+
+```{r}
+rank.sf = NULL
+rank.nsf = NULL
+
+for(i in 1:max(col.leaf)){
+  idx = which(col.leaf == i)
+  target = tmp[,which(colnames(tmp)%in%wells.dend[idx])]
+
+  tmp2 = table(x=as.vector(target),y=rep(pheno,ncol(target)))
+  tmp2 = tmp2[2,]/apply(tmp2,2,sum)
+  
+  rank.sf = c(rank.sf,tmp2['SF'])
+  rank.nsf = c(rank.nsf,tmp2['NSF'])
+}
+
+names(rank.sf) = paste('Cluster',1:10,sep=' ')
+names(rank.nsf) = paste('Cluster',1:10,sep=' ')
+```
+
+Here is an heatmap to get a sense of which clusters show more growth in SF or NSF:
+
+```{r}
+    
+heatmap_ready = tmp
+#sort data by NSF and SF
+heatmap_ready = heatmap_ready[order(pheno),]
+#remove last bug (no pheno)
+heatmap_ready = heatmap_ready[-nrow(heatmap_ready),]
+# sort sugars by clusters
+#heatmap_ready = heatmap_ready[,order(col.leaf[match(colnames(heatmap_ready),wells.dend)])]
+
+# sort clusters by how dissimilar they are between SF and NSF
+gaps = order(rank.sf - rank.nsf,decreasing=TRUE)
+heatmap_ready = heatmap_ready[,order(match(col.leaf[match(colnames(heatmap_ready),wells.dend)],gaps))]
+
+
+
+# library(gplots)
+# library(RColorBrewer)
+# res <- capture.output(gplots::heatmap.2(heatmap_ready[nrow(heatmap_ready):1,],trace='none',scale = 'none', RowSideColors = rev(c(rep('darkorange',sum(pheno=='NSF',na.rm = TRUE)),rep('darkorchid',sum(pheno=='SF',na.rm = TRUE)))),Rowv = FALSE,Colv = FALSE,ColSideColors = brewer.pal(10,'Set3')[col.leaf[match(colnames(heatmap_ready),wells.dend)]], srtCol=45,adjCol = c(1,0),distfun = '',col=colorRampPalette(brewer.pal(9, "GnBu"))(100),linecol = 'black',colsep=c(0:79),rowsep=4,sepwidth=c(0.05,0.1),
+#            sepcolor="black",key.xlab = 'presence of growth',key.title = '',lhei=c(2,8), lwid=c(1,10),margins=c(8,16),cexCol = 0.8))
+# 
+# 
+# #,colsep=c(6,27,35,38,57,63,67,70,74,79),rowsep=4
+# legend(y=1.1, x=.25, xpd=TRUE,
+#     legend = c('Spore-forming','Non spore-forming'),
+#     col = c('darkorchid','darkorange'),
+#     lty= 1,
+#     lwd = 5,
+#     cex=.7
+#     )
+# 
+# # give a try to a two columns figure with just the proportion of growth at the sugar level and a color scale
+# df = cbind(apply(heatmap_ready[6:9,],2,mean),apply(heatmap_ready[1:5,],2,mean))
+# colnames(df) = c('SF','NSF')
+# 
+# sort.blocks = tapply(X= df[,1], INDEX = col.leaf[match(colnames(heatmap_ready),wells.dend)], function(x) order(x,decreasing=TRUE))
+# 
+# for( i in unique(col.leaf[match(colnames(heatmap_ready),wells.dend)])) {
+#   df[which(col.leaf[match(colnames(heatmap_ready),wells.dend)] == i),] = df[which(col.leaf[match(colnames(heatmap_ready),wells.dend)] == i)[sort.blocks[[i]]],]
+# }
+# 
+# res <- capture.output(gplots::heatmap.2(df,trace='none',scale = 'none', ColSideColors = c('darkorchid','darkorange'),Rowv = FALSE,Colv = FALSE,RowSideColors = brewer.pal(10,'Set3')[col.leaf[match(colnames(heatmap_ready),wells.dend)]], srtCol=45,adjCol = c(1,0),distfun = '',col=rev(colorRampPalette(brewer.pal(9, "RdYlBu"))(10)),linecol = 'black',colsep=1,rowsep=c(6,27,35,38,57,63,67,70,74,79),sepwidth=c(0.01,0.3),
+#            sepcolor="black",key.xlab = 'proportion of growth',key.title = '',margins=c(8,15),lhei=c(2,8), lwid=c(3,10),cexCol = 2.5,cexRow = 0.8))
+# 
+# 
+# # give a try to a two columns figure with just the proportion of growth i nthe entire cluster and a color scale
+# df = cbind(rank.sf,rank.nsf)
+# df = df[gaps,]
+# colnames(df) = c('SF','NSF')
+# 
+# res <- capture.output(gplots::heatmap.2(df,trace='none',scale = 'none', ColSideColors = c('darkorange','darkorchid'),Rowv = FALSE,Colv = FALSE,RowSideColors = brewer.pal(10,'Set3')[unique(col.leaf[match(colnames(heatmap_ready),wells.dend)])], srtCol=45,adjCol = c(1,0),distfun = '',col=rev(colorRampPalette(brewer.pal(9, "RdYlBu"))(10)),linecol = 'black',colsep=1,rowsep=0:10,sepwidth=c(0.01,0.01),
+#            sepcolor="black",margins=c(8,8),cexCol = 2,,key.xlab = 'proportion of growth',key.title = ''))
+
+
+# sort sugars by molecular weights
+load('biolog_sugar_molecular_features.Rdata')
+mw = result4$MW[match(colnames(heatmap_ready),result4[,1])]
+names(mw) = colnames(heatmap_ready)
+heatmap_ready = heatmap_ready[,order(mw,decreasing=TRUE)]
+
+# enrichment as a function of molecular weight 
+enr.sf = NULL
+
+for(i in 1:ncol(heatmap_ready)){
+  target = heatmap_ready[,i]
+  tmp2 = table(x=as.vector(target),y=sort(pheno))
+  if(nrow(tmp2) > 1){
+    enr.sf = c(enr.sf,(1+tmp2['1','SF']) / (1+tmp2['1','SF'] + tmp2['0','SF']) / ((1+tmp2['1','NSF']) / (1+tmp2['1','NSF'] + tmp2['0','NSF'])))
+  }else{
+     enr.sf = c(enr.sf,1)
+  }
+}
+
+plot(log2(sort(mw,decreasing=TRUE)),enr.sf)
+
+fit = lm(enr.sf~log2(sort(mw,decreasing=TRUE)))
+summary(fit) # not significant
+abline(b = summary(fit)$coeff[2,1], a = summary(fit)$coeff[1,1],lty=2)
+# res <- capture.output(gplots::heatmap.2(heatmap_ready[nrow(heatmap_ready):1,],trace='none',scale = 'none', RowSideColors = rev(c(rep('darkorange',sum(pheno=='NSF',na.rm = TRUE)),rep('darkorchid',sum(pheno=='SF',na.rm = TRUE)))),Rowv = FALSE,Colv = FALSE, srtCol=45,adjCol = c(1,0),distfun = '',col=colorRampPalette(brewer.pal(9, "GnBu"))(100),linecol = 'black',colsep=c(0:79),rowsep=4,sepwidth=c(0.05,0.1),
+#            sepcolor="black",key.xlab = 'presence of growth',key.title = '',lhei=c(2,8), lwid=c(1,10),margins=c(8,16),cexCol = 0.8))
+# 
+# 
+# #,colsep=c(6,27,35,38,57,63,67,70,74,79),rowsep=4
+# legend(y=1.1, x=.25, xpd=TRUE,
+#     legend = c('Spore-forming','Non spore-forming'),
+#     col = c('darkorchid','darkorange'),
+#     lty= 1,
+#     lwd = 5,
+#     cex=.7
+#     )
+
+# cumulative enrichment plot: 
+enr.sf = NULL
+
+for(i in 1:(ncol(heatmap_ready)-1)){
+  target = heatmap_ready[,1:i]
+  tmp2 = table(x=as.vector(target),y=rep(sort(pheno),i))
+  enr.sf = c(enr.sf,tmp2['1','SF'] / (tmp2['1','SF'] + tmp2['0','SF']) / (tmp2['1','NSF'] / (tmp2['1','NSF'] + tmp2['0','NSF'])))
+}
+#barplot(enr.sf)
+#abline(h=1,lty=2)
+# enrichment plot: 2%-quantile
+#barplot(enr.sf[seq(2,ncol(heatmap_ready),by = 2)])
+#abline(h=1,lty=2)
+# enrichment plot: 3%-quantile
+barplot(enr.sf[seq(3,ncol(heatmap_ready),by = 3)],ylim=c(1,1.8),ylab='spore-forming growth cumulative enrichment', xpd = FALSE,xlab='quantile (%)')
+
+xval = c(5,20,40,60,80,100)#round(100*(seq(3,ncol(heatmap_ready),by = 3)/79))[c(1,5,10,15,20,25)]
+axis(side = 1, at = c(1,7,13,19,25,31), tick = FALSE, labels = xval)
+
+#barplot(enr.sf[seq(4,ncol(heatmap_ready),by = 4)])
+#abline(h=1,lty=2)
+# enrichment plot: 5%-quantile
+#barplot(enr.sf[seq(5,ncol(heatmap_ready),by = 5)])
+#abline(h=1,lty=2)
+#barplot(enr.sf[seq(6,ncol(heatmap_ready),by = 6)])
+#abline(h=1,lty=2)
+# enrichment plot: 8 sugars
+#barplot(enr.sf[seq(8,ncol(heatmap_ready),by = 8)])
+#abline(h=1,lty=2)
+
+
+# quantile enrichment plot: 8 sugars
+enr.sf = NULL
+idx = c(1,seq(8,ncol(heatmap_ready),by = 8),79)
+idx =unique(idx)
+for(i in 1:(length(idx)-1)){
+  target = heatmap_ready[,idx[i]:idx[i+1]]
+  tmp2 = table(x=as.vector(target),y=rep(sort(pheno),length(idx[i]:idx[i+1])))
+  enr.sf = c(enr.sf,(1+tmp2['1','SF']) / (1+tmp2['1','SF'] + tmp2['0','SF']) / ((1+tmp2['1','NSF']) / (1+tmp2['1','NSF'] + tmp2['0','NSF'])))
+}
+
+barplot(enr.sf)
+abline(h=1,lty=2)
+
+```
+
+
+```{r,echo=F}
+cat('Proportion of growth within each cluster for Spore-forming bacteria\n')
+sort(rank.sf,decreasing=T)
+cat('Proportion of growth within each cluster for non Spore-forming bacteria\n')
+sort(rank.nsf,decreasing=T)
+```
+```{r}
+cat('Cluster 5:',ENR[[5]],'\n')
+```
+
+Then, we test whether a cluster is overrepresented in terms of growth for one of the two groups (SF/NSF):
+
+```{r}
+
+for(i in 1:max(col.leaf)){
+  idx = which(col.leaf == i)
+  target = tmp[,which(colnames(tmp)%in%wells.dend[idx])]
+  #bgd = tmp[,which(!(colnames(tmp)%in%wells.dend[idx]))]
+  
+  test = fisher.test(x=as.vector(target),y=rep(pheno,ncol(target)))
+  if( test$estimate >1){
+    cat('Cluster',i,'is enriched in Spore-forming bugs ',test$p.val,' \n')
+    print(table(as.vector(target),rep(pheno,ncol(target))))
+    cat('This cluster has been found enriched in pathways such as:\n')
+    print(ENR[[i]])
+    cat('\n')
+  }else{
+    if( test$estimate <1){
+      cat('Cluster',i,'is enriched in non Spore-forming bugs ',test$p.val,' \n')
+          print(table(as.vector(target),rep(pheno,ncol(target))))
+      cat('This cluster has been found enriched in pathways such as:\n')
+      print(ENR[[i]])
+      cat('\n')
+    }
+  }
+}
+
+
+```
+
+
+### Well grouping - 4 broad categories
+
+Here we use categorical grouping done by Hilary:
+```{r}
+library(openxlsx)
+#load mapping between well names and well number
+wells = read.xlsx('biolog_input/biolog clusters by sugar type not tanimoto.xlsx',startRow = 2)
+wells = wells[,-1]
+
+idx = match(rownames(av.profiles.fill[[1]]), wells$Well)
+groups = wells$cluster.by.carbon.type.22.10.18[idx]
+table(groups)
+```
+
+Extraction of kinetic parameters: k, n0, r, t_mid, t_gen
+![](biolog_input/growthcurver.PNG)
+
+```{r}
+# carrying capacity
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = log10(as.vector(tmp)+1),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero growth
+df = df[-which(df$K == 0),]
+
+library(ggplot2)
+library(ggpubr)
+ggboxplot(df, fill='pheno', y='K', x='group') + stat_compare_means(label = "p.signif",aes(group = pheno)) + ggtitle('carrying capacity') + ylab('log10(K)')
+```
+
+
+```{r}
+# N0: population at start
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,2]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = as.vector(tmp),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero growth
+df = df[-which(df$K == 0),]
+
+library(ggplot2)
+library(ggpubr)
+ggboxplot(df, fill='pheno', y='K', x='group') + stat_compare_means(label = "p.signif",aes(group = pheno)) + ggtitle('population at start') + ylab('population at start')
+```
+
+
+```{r}
+# t_mid
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,4]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = log2(as.vector(tmp)+1),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero time and negative time
+df = df[-which(df$K <= 0),]
+# remove Nan
+df = df[-which(is.nan(df$K)),]
+
+library(ggplot2)
+library(ggpubr)
+ggboxplot(df, fill='pheno', y='K', x='group') + stat_compare_means(label = "p.signif",aes(group = pheno)) + ggtitle('T mid') + ylab('half time')
+#save as eps
+setEPS()
+postscript("halftime.eps")
+ggboxplot(df, fill='pheno', y='K', x='group') + stat_compare_means(label = "p.signif",aes(group = pheno)) + ggtitle('T mid') + ylab('half time')
+dev.off()
+
+# save raw data in table:
+colnames(df)[1] = 'half_time_log2'
+write.csv(df,file='half_time_data.csv',quote = FALSE,row.names = FALSE)
+```
+
+```{r}
+# r: growth rate
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,3]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = log2(as.vector(tmp)+1),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero growth
+df = df[-which(df$K == 0),]
+
+library(ggplot2)
+library(ggpubr)
+ggboxplot(df, fill='pheno', y='K', x='group') + stat_compare_means(label = "p.signif",aes(group = pheno)) + ggtitle('growth rate') + ylab('growth rate')
+```
+
+#### Barplot with error bar
+
+```{r}
+# carrying capacity
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = log10(as.vector(tmp)+1),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero growth
+df = df[-which(df$K == 0),]
+
+library(ggplot2)
+library(ggpubr)
+ggbarplot(df, x = "group", y = "K",add='mean_se',
+          fill = "pheno", 
+          position = position_dodge(0.8),  add.params = list(group = "pheno"))+
+  stat_compare_means(aes(group = pheno), label = "p.signif") + ggtitle('carrying capacity') + ylab('log10(K)')
+
+```
+
+
+```{r}
+# N0: population at start
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,2]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = as.vector(tmp),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero growth
+df = df[-which(df$K == 0),]
+
+library(ggplot2)
+library(ggpubr)
+ 
+ggbarplot(df, x = "group", y = "K",add='mean_se',
+          fill = "pheno", 
+          position = position_dodge(0.8),  add.params = list(group = "pheno"))+
+  stat_compare_means(aes(group = pheno), label = "p.signif") + ggtitle('population at start') + ylab('population at start')
+```
+
+
+```{r}
+# t_mid
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,4]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = log2(as.vector(tmp)+1),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero time and negative time
+df = df[-which(df$K <= 0),]
+
+library(ggplot2)
+library(ggpubr)
+ggbarplot(df, x = "group", y = "K",add='mean_se',
+          fill = "pheno", 
+          position = position_dodge(0.8),  add.params = list(group = "pheno"))+
+  stat_compare_means(aes(group = pheno), label = "p.signif") + ggtitle('T mid') + ylab('half time')
+```
+```{r}
+# r: growth rate
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,3]))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+colnames(tmp) = wells$Well[idx]
+
+df = data.frame('K' = log2(as.vector(tmp)+1),
+                'strain' = rep(rownames(tmp),ncol(tmp)),
+                'sugar'= rep(colnames(tmp),each=nrow(tmp)),
+                'group' = rep(groups,each=nrow(tmp)),
+                'pheno' = rep(pheno,ncol(tmp)))
+# remove NA
+df = df[-which(is.na(df$pheno)),]
+# remove zero growth
+df = df[-which(df$K == 0),]
+
+library(ggplot2)
+library(ggpubr)
+ggbarplot(df, x = "group", y = "K",add='mean_se',
+          fill = "pheno", 
+          position = position_dodge(0.8),  add.params = list(group = "pheno"))+
+  stat_compare_means(aes(group = pheno), label = "p.signif") + ggtitle('growth rate') + ylab('growth rate')
+```
+
+## Analysis at the clade level
+
+In this section, we separate the two clades (blue and red) and check for differences within each clade.
+
+### Clade 1 (red)
+
+```{r}
+av.profiles <- lapply(DB[names(clades[which(clades == 'red')])],function(x){
+  # Average at the well level
+  if(nrow(x[[1]]) > 1){
+    
+    tmp = lapply(x,function(y) apply(y[-nrow(y),-c(1,10)],2,as.numeric))
+    tmp2 = Reduce('+',tmp)/length(tmp)
+    row.names(tmp2) = x[[1]][-nrow(x[[1]]),1]
+    return(tmp2)
+  }else{
+    return(NULL)
+  }
+})
+
+all_wells_clade <- sort(unique(unlist(sapply(av.profiles,row.names))))
+length(all_wells_clade)
+
+av.profiles.fill = lapply(1:length(av.profiles),function(i){
+  idx = all_wells_clade[which(!(all_wells_clade%in%row.names(av.profiles[[i]])))]
+  if(length(idx) < length(all_wells_clade)){
+    tmp = rbind(av.profiles[[i]],matrix(0,nrow=length(idx),ncol=ncol(av.profiles[[i]])))
+    rownames(tmp) = c(rownames(av.profiles[[i]]),idx)
+    tmp = tmp[order(row.names(tmp)),]
+    return(tmp)
+  }else{
+    tmp = matrix(0,nrow=length(idx),ncol=ncol(av.profiles[[1]]))
+    rownames(tmp) = idx
+    tmp = tmp[order(row.names(tmp)),]
+    colnames(tmp) = colnames(av.profiles[[1]])
+    return(tmp)
+  }
+})
+
+sub.pheno = pheno[which(clades == 'red')]
+```
+
+#### Presence/absence
+```{r}
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1] != 0))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+
+d <- dist(tmp,method = 'binary')
+
+# make plot
+plot(hclust(d),label=sub.pheno,col='red')
+
+pvals <- NULL
+# Fisher test per well
+for(j in 1:ncol(tmp)){
+  if(length(unique(tmp[,j])) > 1){
+    tmp2 = fisher.test(x = tmp[,j],y=sub.pheno)$p.val
+    pvals = c(pvals,tmp2)
+    if(tmp2 < 0.1){
+      cat('Well',rownames(av.profiles.fill[[1]])[j], 'found to be close from significance\n')
+      print(table(tmp[,j],sub.pheno))
+    }
+  }else{
+    # cat('All records for well',rownames(av.profiles.fill[[1]])[j], 'were found equal to',unique(tmp[,j]),'\n')
+  }
+}
+```
+#### Well grouping
+
+Here we use data extracted from KEGG and cheminformatics to group wells into 10 clusters with functional annotaitons for each of them:
+```{r}
+load('biolog_kegg_wells.Rdata')
+
+#load mapping between well names and well number
+wells = read.table('biolog_wells.txt',sep='\t')
+
+idx = which(colnames(reps[[1]]) %in% all_wells_clade)-2
+
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1] != 0))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+
+# find clusters
+sub.wells = wells[idx,]
+colnames(tmp) = sub.wells[,2]
+
+for(i in 1:max(col.leaf)){
+  idx = which(col.leaf == i)
+  target = tmp[,which(colnames(tmp)%in%wells.dend[idx])]
+  #bgd = tmp[,which(!(colnames(tmp)%in%wells.dend[idx]))]
+  
+  test = fisher.test(x=as.vector(target),y=rep(sub.pheno,ncol(target)))
+  if(test$p.val < 0.05 & test$estimate >1){
+    cat('Cluster',i,'is enriched in Spore-forming bugs \n')
+    cat('This cluster has been found enriched in pathways such as:\n')
+    print(ENR[[i]])
+          cat('\n')
+  }else{
+    if(test$p.val < 0.05 & test$estimate <1){
+      cat('Cluster',i,'is enriched in non Spore-forming bugs \n')
+      cat('This cluster has been found enriched in pathways such as:\n')
+      print(ENR[[i]])
+      cat('\n')
+    }
+  }
+}
+
+
+```
+
+### Clade 2 (blue)
+
+```{r}
+av.profiles <- lapply(DB[names(clades[which(clades == 'blue')])],function(x){
+  # Average at the well level
+  if(nrow(x[[1]]) > 1){
+    
+    tmp = lapply(x,function(y) apply(y[-nrow(y),-c(1,10)],2,as.numeric))
+    tmp2 = Reduce('+',tmp)/length(tmp)
+    row.names(tmp2) = x[[1]][-nrow(x[[1]]),1]
+    return(tmp2)
+  }else{
+    return(NULL)
+  }
+})
+
+all_wells_clade <- sort(unique(unlist(sapply(av.profiles,row.names))))
+length(all_wells_clade)
+
+av.profiles.fill = lapply(1:length(av.profiles),function(i){
+  idx = all_wells_clade[which(!(all_wells_clade%in%row.names(av.profiles[[i]])))]
+  if(length(idx) < length(all_wells_clade)){
+    tmp = rbind(av.profiles[[i]],matrix(0,nrow=length(idx),ncol=ncol(av.profiles[[i]])))
+    rownames(tmp) = c(rownames(av.profiles[[i]]),idx)
+    tmp = tmp[order(row.names(tmp)),]
+    return(tmp)
+  }else{
+    tmp = matrix(0,nrow=length(idx),ncol=ncol(av.profiles[[1]]))
+    rownames(tmp) = idx
+    tmp = tmp[order(row.names(tmp)),]
+    colnames(tmp) = colnames(av.profiles[[1]])
+    return(tmp)
+  }
+})
+sub.pheno = pheno[which(clades == 'blue')]
+```
+
+
+
+#### Presence/absence
+
+```{r}
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1] != 0))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+
+d <- dist(tmp,method = 'binary')
+
+# make plot
+plot(hclust(d),label=sub.pheno,col='blue')
+
+```
+
+#### Well grouping
+
+Here we use data extracted from KEGG and cheminformatics to group wells into 10 clusters with functional annotaitons for each of them:
+```{r}
+load('biolog_kegg_wells.Rdata')
+
+#load mapping between well names and well number
+wells = read.table('biolog_wells.txt',sep='\t')
+
+idx = which(colnames(reps[[1]]) %in% all_wells_clade)-2
+
+tmp = lapply(av.profiles.fill,function(x) as.numeric(x[,1] != 0))
+tmp = do.call('rbind',tmp)
+row.names(tmp) = names(av.profiles)
+
+# find clusters
+sub.wells = wells[idx,]
+colnames(tmp) = sub.wells[,2]
+
+for(i in 1:max(col.leaf)){
+  idx = which(col.leaf == i)
+  target = as.matrix(tmp[,which(colnames(tmp)%in%wells.dend[idx])])
+  #bgd = tmp[,which(!(colnames(tmp)%in%wells.dend[idx]))]
+  
+  test = fisher.test(x=as.vector(target),y=rep(sub.pheno,ncol(target)))
+  if(test$p.val < 0.05 & test$estimate >1){
+    cat('Cluster',i,'is enriched in Spore-forming bugs \n')
+    cat('This cluster has been found enriched in pathways such as:\n')
+    print(ENR[[i]])
+          cat('\n')
+  }else{
+    if(test$p.val < 0.05 & test$estimate <1){
+      cat('Cluster',i,'is enriched in non Spore-forming bugs \n')
+      cat('This cluster has been found enriched in pathways such as:\n')
+      print(ENR[[i]])
+      cat('\n')
+    }
+  }
+}
+
+
+```

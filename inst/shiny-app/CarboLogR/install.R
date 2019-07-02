@@ -15,8 +15,6 @@ if(compareVersion(R_version, R_min_version) < 0){
 ################################################################################
 install_missing_packages = function(pkg, version = NULL, verbose = TRUE){
   availpacks = .packages(all.available = TRUE)
-  source("http://bioconductor.org/biocLite.R")
- # biocLite("BiocUpgrade")
   missingPackage = FALSE
   if(!any(pkg %in% availpacks)){
     if(verbose){
@@ -38,12 +36,14 @@ install_missing_packages = function(pkg, version = NULL, verbose = TRUE){
                 Update will be attempted.")
       }
       missingPackage <- TRUE
-      }
+    }
   }
   if(missingPackage){
-    biocLite(pkg, suppressUpdates = TRUE)
+    if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+    #biocLite(pkg, suppressUpdates = TRUE)
+    BiocManager::install(pkg)
   }
-  }
+}
 ################################################################################
 # Define list of package names and required versions.
 ################################################################################
@@ -55,8 +55,8 @@ deppkgs = c(MASS='7.3-51.4',
             growthcurver='0.3.0',
             heatmaply='0.15.2',
             plotly = "4.8.0",
-            shinyFiles = "0.7.2",
             shiny = "1.2.0",
+            shinyFiles = "0.7.2",
             shinythemes = "1.1.2")
 # Loop on package check, install, update
 pkg1 = mapply(install_missing_packages,

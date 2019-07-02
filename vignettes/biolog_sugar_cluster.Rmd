@@ -1,0 +1,790 @@
+---
+title: "biolog_sugar_cluster"
+author: "Kevin Vervier"
+date: "4 July 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+In this document, we group the BioLog wells by similarity of the products found inside.
+
+## Well properties
+
+```{r}
+ library("ChemmineR") # Loads the package
+```
+
+```{r,eval=F}
+wells = read.table('biolog_wells.txt',sep='\t')
+
+head(wells)
+
+ #source("http://bioconductor.org/biocLite.R") # Sources the biocLite.R installation script. 
+ #biocLite("ChemmineR") # Installs the package. 
+ 
+
+```
+
+```{r,eval=F}
+job1 <- launchCMTool("pubchemID2SDF", wells[,3])
+while(status(job1) == 'RUNNING'){}
+result1 <- result(job1)
+job4 <- launchCMTool("OpenBabel Descriptors", result1)
+while(status(job4) == 'RUNNING'){}
+result4 <- result(job4)
+result4 = cbind(wells[,2],result4)
+head(result4) 
+
+# convert
+apset <- sdf2ap(result1) 
+cid(apset) = as.character(wells[,2])
+save(result4,apset,file='../data/biolog_sugar_molecular_features.Rdata')
+
+```
+
+We compute the Tanimoto similarity between each sugar molecule, based on their binary fingerprints (one bit per pattern), as explained in https://www.surechembl.org/knowledgebase/84207-tanimoto-coefficient-and-fingerprint-generation.
+
+![](HashedFingerprint.png)
+```{r}
+load('../data/biolog_sugar_molecular_features.Rdata')
+fpset <- desc2fp(apset)
+```
+
+Here are two examples of the fingerprints extracted from PubChem (only 20 first bits):
+```{r,echo=F}
+cat(as.character(wells[5,2]), head(fpset[[5]]@fp,20),'\n')
+cat(as.character(wells[7,2]), head(fpset[[7]]@fp,20),'\n')
+
+cat("Tanimoto's Similarity:",fpSim(fpset[5], fpset[7], sorted=FALSE),'\n')
+```
+
+```{r,message=FALSE,warning=FALSE}
+simMA <- sapply(cid(fpset), function(x) fpSim(fpset[x], fpset, sorted=FALSE))
+save(simMA,file='../data/pubchem_kegg/cluster_info.Rdata')
+hc <- hclust(as.dist(1-simMA), method="single") 
+library(heatmaply)
+
+heatmaply(simMA, k_col = NA, k_row = NA, label_names = c("product1", "product2", "similarity"),labRow = rownames(simMA),labCol =colnames(simMA),fontsize_row = 4,fontsize_col = 4) %>% layout(margin = list(l = 130, b = 40))
+
+# 10 groups were found
+
+# get cluster/well info
+tmp = heatmapr(simMA, k_col = NA, k_row = NA)
+dend = as.dendrogram(tmp$rows)
+library(dendextend)
+col.leaf = get_leaves_branches_col(dend)
+col.leaf = as.numeric(as.factor(col.leaf))
+wells.dend = labels(dend)
+```
+
+Here is the assignment of sugars in each cluster:
+```{r}
+cbind(wells.dend,col.leaf)
+```
+
+Here is the distribution of cluster size:
+```{r}
+sort(table(col.leaf))
+```
+
+Here is the distribution of molecular weight in each cluster:
+```{r}
+boxplot(result4$MW~col.leaf,xlab='cluster ID',ylab='Molecular Weight')
+```
+
+
+
+## Functional analysis on the identified groups
+
+Here we rely on KEGG database for compounds to understand the underlying biology of the clusters we obtained in the previous step:
+
+```{r,echo=F, include=FALSE}
+library(KEGGREST)
+
+DB.KEGG = list()
+
+i=1
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=2
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=3
+tmp = names(keggFind('compound',query='N-Acetyl-D-mannosamine'))
+tmp2 = keggGet(tmp)
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=4
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=5
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=6
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=7
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=8
+tmp = names(keggFind('compound',query='Cellobiose'))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=9
+tmp = names(keggFind('compound',query='Cyclodextrin'))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=10
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=11
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=12
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=13
+tmp = names(keggFind('compound',query='Erythritol'))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=14
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=15
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=16
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=17
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=18
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=19
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=20
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=21
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[3]]
+
+i=22
+tmp2 = keggGet('C00103')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=23 
+tmp2 = keggGet('C00092')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=24
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=25 
+tmp2 = keggGet('C04508')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=26
+tmp2 = keggGet('C00137')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=27 
+tmp2 = keggGet('C00984')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=28
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=29
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=30
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=31
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=32
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=33 
+tmp2 = keggGet('C08243')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=34 
+tmp2 = keggGet('C05402')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=35 
+tmp2 = keggGet('C11911')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=36 
+tmp2 = keggGet('C04698')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=37
+tmp2 = keggGet('C03619')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=38 
+tmp2 = keggGet('C00963')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=39
+tmp2 = keggGet('C00963')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=40
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=41 
+tmp2 = keggGet('C00492')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=42
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=43
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=44
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=45
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=46
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=47
+tmp2 = keggGet('C01083')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=48
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=49
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=50
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=51
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=52
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=53 
+tmp2 = keggGet('C05984')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=54
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=55
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=56
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=57
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=58 
+tmp2 = keggGet('C00256')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=59
+tmp2 = keggGet('C00186')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=60 
+tmp2 = keggGet('C06010')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=61
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=62
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=63
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[10]]
+
+i=64
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=65 
+tmp2 = keggGet('C00022')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=66
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=67 
+tmp2 = keggGet('C01180')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=68
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=69 
+tmp2 = keggGet('C00490')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=70 
+tmp2 = keggGet('C00552')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=71
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=72 
+tmp2 = keggGet('C19779')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=73
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=74 
+tmp2 = keggGet('C00064')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=75 
+tmp2 = keggGet('C00135')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=76
+tmp2 = keggGet('C00188')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=77
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=78
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=79
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=80 
+tmp2 = keggGet('C00049')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=81
+tmp2 = keggGet('C00064')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=82
+tmp2 = keggGet('C00073')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=83
+tmp2 = keggGet('C00148')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=84
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[2]]
+
+i=85
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=86
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=87
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=88
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=89
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=90
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[4]]
+
+i=91
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[4]]
+
+i=92
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=93
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[5]]
+
+i=94
+tmp = names(keggFind('compound',query=as.character(wells[i,2])))
+tmp2 = keggGet(tmp)
+as.character(wells[i,2])
+lapply(tmp2,function(x)x$NAME)
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+
+i=95 
+tmp2 = keggGet('C00105')
+as.character(wells[i,2])
+DB.KEGG[[as.character(wells[i,2])]] = tmp2[[1]]
+```
+
+
+Here are the top 20 most represented KEGG pathways across all sugars:
+```{r}
+sort(table(unlist(lapply(DB.KEGG,function(x)x$PATHWAY))),decreasing=T)[1:20]
+
+```
+
+After getting KEGG pathways corresponding to the different wells, we want to check if the clusters we got from PubChem similarity are biologically relevant.
+
+```{r}
+pathways = lapply(DB.KEGG,function(x)x$PATHWAY)
+pathways.name = unique(unlist(pathways)) # 144 pathways
+
+# enrichment
+ENR = vector("list", length = max(col.leaf))
+for(i in 1:max(col.leaf)){
+  HITS = NULL
+  
+  for(j in 1:length(pathways.name)){
+    target = sapply(pathways[wells.dend[which(col.leaf == i)]], function(x) pathways.name[j] %in% x)
+    bgd = sapply(pathways[wells.dend[which(col.leaf != i)]], function(x) pathways.name[j] %in% x)
+    
+    tmp = fisher.test(x=c(target,bgd),y=c(rep('target',length(target)),rep('bgd',length(bgd))))
+    #if(tmp$estimate > 1 & tmp$p.value < 0.05) ENR[[i]] = c(ENR[[i]],pathways.name[j])
+    if(tmp$p.value < 0.03) HITS = rbind(HITS,c(pathways.name[j],round(sign(tmp$estimate-1)*tmp$p.value,3)))
+  }
+ if(length(HITS) > 1) colnames(HITS) = c('Pathway','signed p-value')
+  ENR[[i]] = HITS[order(abs(as.numeric(HITS[,2])),decreasing = TRUE),]
+}
+
+# This enrichment mapping might be useful when we detect significant clusters in a specific group of strains
+
+save(ENR,col.leaf,DB.KEGG,pathways.name,wells.dend,file='biolog_kegg_wells.Rdata')
+```
+
+Here is the content of each cluster in terms of enriched KEGG pathways:
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 1000)
+```
+
+```{r}
+ENR
+```
+
+## ATC classification for compounds
+
+Here, we retrieve information regarding the classification of each compound and point potential overlaps found within each cluster:
+
+```{r}
+# install.packages('httr')
+  library(httr)
+ #install.packages("RCurl")
+  library(RCurl)
+# install.packages("RJSONIO")
+  library(RJSONIO)
+# install.packages("plyr")
+  library(plyr)
+
+# solution from https://www.biostars.org/p/184419/
+getATC <- function(cidnum){
+pubchem_url_in<-paste('https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/',cidnum,'/JSON',sep='')
+pubchempage <- GET(pubchem_url_in) 
+page_text <- content(pubchempage,as='text')
+page_test2 <- fromJSON(page_text)
+ATC_parse1  <- grep('www.whocc.no',unlist(page_test2),value=T)
+ATC_parse2 <- ATC_parse1[2]
+ATCout1 <-strsplit(strsplit(ATC_parse2,'code=')[[1]][2],'&showdescription')[[1]][1]
+return(c(cidnum,ATCout1))
+}
+
+cidnum_few<-wells[,3]
+testout <- lapply(cidnum_few,getATC)
+cid_getatc <- do.call(rbind,testout)
+
+cid_getatc
+
+# only 14/95 have a match on ATC...
+```
+
