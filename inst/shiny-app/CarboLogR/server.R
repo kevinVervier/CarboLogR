@@ -508,8 +508,8 @@ shinyServer(function(input, output,session) {
   #metadata print
   output$metadataTable <- renderTable({
     inFile <- path_metadata()
-
-    if (is.null(inFile) | n_organism() < 2)
+    #if (is.null(inFile) | n_organism() < 2)
+    if (nrow(inFile) == 0 | n_organism() < 2)
       return(NULL)
     head(read.table(inFile$datapath, header = FALSE),5)
   })
@@ -564,7 +564,7 @@ shinyServer(function(input, output,session) {
 
 
     if(n_organism() > 1){
-      if (is.null(inFile))
+      if (nrow(inFile)==0)
         return(NULL)
 
       #read metadata
@@ -640,7 +640,9 @@ shinyServer(function(input, output,session) {
       )%>%
         layout(title=list(text=paste0(c(rep("&nbsp;", 3),
                                         levels(pheno)[1],
-                                        rep("&nbsp;", 20),
+                                        rep("&nbsp;", 10),
+                                        '|',
+                                        rep("&nbsp;", 10),
                                         levels(pheno)[2],
                                         rep("\n&nbsp;", 3)),
                                       collapse = ""),xanchor = "right"),
@@ -687,7 +689,7 @@ shinyServer(function(input, output,session) {
 
       inFile <- path_metadata()
       if(n_organism() > 1){
-        if (is.null(inFile)) return(NULL)
+        if (nrow(inFile)==0) return(NULL)
 
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
@@ -784,7 +786,7 @@ shinyServer(function(input, output,session) {
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
     inFile <- path_metadata()
     if(n_organism() > 1){
-      if (is.null(inFile))
+      if (nrow(inFile)==0)
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
@@ -903,7 +905,9 @@ shinyServer(function(input, output,session) {
         #layout(yaxis = list(size=8,title='category'), xaxis=list(title='log2 Odd ratio'),showlegend = TRUE,font=t)
         layout(title=list(text=paste0(c(rep("&nbsp;", 3),
                                         levels(pheno)[1],
-                                        rep("&nbsp;", 20),
+                                        rep("&nbsp;", 10),
+                                        '|',
+                                        rep("&nbsp;", 10),
                                         levels(pheno)[2],
                                         rep("\n&nbsp;", 3)),
                                       collapse = ""),xanchor = "right"),
@@ -956,7 +960,7 @@ shinyServer(function(input, output,session) {
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
       inFile <- path_metadata()
       if(n_organism() > 1){
-        if (is.null(inFile))
+        if (nrow(inFile)==0)
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
@@ -1115,7 +1119,7 @@ shinyServer(function(input, output,session) {
     inFile <- path_metadata()
 
     if(n_organism() > 1){
-      if (is.null(inFile))
+      if (nrow(inFile)==0)
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
@@ -1230,7 +1234,9 @@ shinyServer(function(input, output,session) {
       )%>%
         layout(title=list(text=paste0(c(rep("&nbsp;", 3),
                                         levels(pheno)[1],
-                                        rep("&nbsp;", 20),
+                                        rep("&nbsp;", 10),
+                                        '|',
+                                        rep("&nbsp;", 10),
                                         levels(pheno)[2],
                                         rep("\n&nbsp;", 3)),
                                       collapse = ""),xanchor = "right"),yaxis = list(size=8,title=paste0(c(rep("&nbsp;", 20),
@@ -1283,7 +1289,7 @@ shinyServer(function(input, output,session) {
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
       inFile <- path_metadata()
       if(n_organism()>1){
-        if (is.null(inFile))
+        if (nrow(inFile)==0)
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
@@ -1503,7 +1509,7 @@ shinyServer(function(input, output,session) {
   output$metadataTableKine <- renderTable({
     inFile <- path_metadata_kine()
 
-    if (is.null(inFile) | n_organism() < 2)
+    if (nrow(inFile)==0 | n_organism() < 2)
       return(NULL)
     head(read.table(inFile$datapath, header = FALSE),5)
   })
@@ -1517,7 +1523,7 @@ shinyServer(function(input, output,session) {
     inFile <- path_metadata_kine()#input$metadataFileKine
 
     if(n_organism() > 1){
-      if (is.null(inFile))
+      if (nrow(inFile)==0)
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
@@ -1610,7 +1616,9 @@ shinyServer(function(input, output,session) {
       )%>%
         layout(title=list(text=paste0(c(rep("&nbsp;", 3),
                                         levels(pheno)[1],
-                                        rep("&nbsp;", 20),
+                                        rep("&nbsp;", 10),
+                                        '|',
+                                        rep("&nbsp;", 10),
                                         levels(pheno)[2],
                                         rep("\n&nbsp;", 3)),
                                       collapse = ""),xanchor = "right"),yaxis = list(size=8,title=paste0(c(rep("&nbsp;", 20),
@@ -1656,7 +1664,7 @@ shinyServer(function(input, output,session) {
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
       inFile <- path_metadata_kine()#input$metadataFileKine
       if(n_organism()>1){
-        if (is.null(inFile))
+        if (nrow(inFile)==0)
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
@@ -1741,7 +1749,7 @@ shinyServer(function(input, output,session) {
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
     inFile <- path_metadata_kine()#input$metadataFileKine
     if(n_organism()>1){
-      if (is.null(inFile))
+      if (nrow(inFile)==0)
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
@@ -1841,7 +1849,9 @@ shinyServer(function(input, output,session) {
       )%>%
         layout(title=list(text=paste0(c(rep("&nbsp;", 3),
                                         levels(pheno)[1],
-                                        rep("&nbsp;", 20),
+                                        rep("&nbsp;", 10),
+                                        '|',
+                                        rep("&nbsp;", 10),
                                         levels(pheno)[2],
                                         rep("\n&nbsp;", 3)),
                                       collapse = ""),xanchor = "right"),yaxis = list(size=8,title=paste0(c(rep("&nbsp;", 20),
@@ -1889,7 +1899,7 @@ shinyServer(function(input, output,session) {
       inFile <- path_metadata_kine()#input$metadataFileKine
       if(n_organism()>1){
 
-        if (is.null(inFile))
+        if (nrow(inFile)==0)
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
@@ -2026,7 +2036,7 @@ shinyServer(function(input, output,session) {
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
     inFile <- path_metadata_kine()#input$metadataFileKine
     if(n_organism()>1){
-      if (is.null(inFile))
+      if (nrow(inFile)==0)
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
@@ -2169,7 +2179,7 @@ shinyServer(function(input, output,session) {
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
       inFile <- path_metadata_kine()#input$metadataFileKine
       if(n_organism()>1){
-        if (is.null(inFile))
+        if (nrow(inFile)==0)
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
