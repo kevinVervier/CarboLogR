@@ -23,7 +23,7 @@ shinyUI(fluidPage(#theme = "bootstrap.css",
         tags$li('File names should be formatted like organismName_replicateNumber (e.g., HB_1).')
       ),
       radioButtons(inputId="plateTypeSelect", label="Which Biolog plate was used?",
-                   choices=c("AN","PM1","PM2A")),
+                   choices=c("AN","PM1","PM2A","other")),
 
         textOutput("text_organism"),
       p('NB: please make sure that the number of organisms is correct. If not, there might be an issue with data import.')
@@ -65,9 +65,11 @@ shinyUI(fluidPage(#theme = "bootstrap.css",
      p('- second column is group name'),
      p('example provided in inst/extdata/metadata_PM1.txt'),
 
-     fileInput("metadataFile", "Choose Metadata File",
-               accept = c("text/plain","text/tab-separated-values")
-     ),
+     #fileInput("metadataFile", "Choose Metadata File",
+     #          accept = c("text/plain","text/tab-separated-values")
+     #),
+
+     shinyFilesButton('metadataFile', label='Browse...', title='Choose Metadata File', multiple=FALSE),
      p('First 5 lines of the metadata file:'),
      tableOutput("metadataTable"),
      checkboxInput("showSourceName", "show carbon source name instead of well ID", FALSE),
@@ -108,9 +110,10 @@ shinyUI(fluidPage(#theme = "bootstrap.css",
      p('- second column is group name'),
      p('example provided in inst/extdata/metadata_PM1.txt'),
 
-     fileInput("metadataFileKine", "Choose Metadata File",
-               accept = c("text/plain","text/tab-separated-values")
-     ),
+     #fileInput("metadataFileKine", "Choose Metadata File",
+     #          accept = c("text/plain","text/tab-separated-values")
+     #),
+     shinyFilesButton('metadataFileKine', label='Browse...', title='Choose Metadata File', multiple=FALSE),
      p('First 5 lines of the metadata file:'),
      tableOutput("metadataTableKine"),
      checkboxInput("showSourceNameKine", "show carbon source name instead of well ID", FALSE),

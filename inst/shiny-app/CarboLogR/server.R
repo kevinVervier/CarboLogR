@@ -9,7 +9,7 @@ shinyServer(function(input, output,session) {
   shinyDirChoose(input, 'plate_directory', session=session, roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()),defaultRoot = 'library')
 
   path_plate <- reactive({
-    return(print(parseDirPath(roots=c('home'=home_dir,getVolumes()()), input$plate_directory)))
+    return(print(parseDirPath(roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()), input$plate_directory)))
   })
 
   #number of organism function
@@ -256,15 +256,21 @@ shinyServer(function(input, output,session) {
   })
 
   observe({    ## will 'observe' the radiobutton press
-
-    rv$anno <- ANNO[[input$plateTypeSelect]]   ## store the annotation in the reactive value
-    # names(rv$anno$ENR) = paste0('cluster',1:length(rv$anno$ENR))
+    if(input$plateTypeSelect != 'other'){
+      rv$anno <- ANNO[[input$plateTypeSelect]]   ## store the annotation in the reactive value
+    }else{
+      rv$anno <- NULL
+    }
     rv$anno
   })
 
   observe({    ## will 'observe' the radiobutton press
-    rv$matchTable <- match_table[which(match_table$plateID == input$plateTypeSelect),]   ## store the annotation in the reactive value
-    rv$matchTable
+    if(input$plateTypeSelect != 'other'){
+      rv$matchTable <- match_table[which(match_table$plateID == input$plateTypeSelect),]   ## store the annotation in the reactive value
+    }else{
+      rv$matchTable <- NULL
+    }
+     rv$matchTable
   })
 
   observe({    ## will 'observe' the radiobutton press
@@ -335,7 +341,7 @@ shinyServer(function(input, output,session) {
       # presence/absence for each well
       tmp = lapply(profiles.fill,function(x) as.numeric(x[,1] != 0))
       tmp = do.call('rbind',tmp)
-      rownames(tmp) = unlist(lapply(rv$data$reps,names))[-which(unlist(lapply(rv$data$reps,names)) %in% rv$data$fr)]#rep(names(rv$data$fits),times=lapply(rv$data$fits,length))
+      rownames(tmp) = unlist(lapply(rv$data$reps,names))[-which(unlist(lapply(rv$data$reps,names)) %in% unlist(rv$data$fr))]#rep(names(rv$data$fits),times=lapply(rv$data$fits,length))
       colnames(tmp) = row.names(profiles.fill[[1]])
 
       write.csv(tmp, file)
@@ -485,9 +491,23 @@ shinyServer(function(input, output,session) {
 
   },width=800,height=600)
 
+
+  shinyFileChoose(input, 'metadataFile', roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+                                                 'home'=home_dir,getVolumes()()),  filetypes=c('txt'),defaultRoot = 'library')
+
+
+  path_metadata <- reactive({
+    if(!is.null(input$metadataFile)){
+      return(parseFilePaths(roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+                                                                   'home'=home_dir,getVolumes()()), input$metadataFile))
+    }else{
+      return(NULL)
+    }
+  })
+
   #metadata print
   output$metadataTable <- renderTable({
-    inFile <- input$metadataFile
+    inFile <- path_metadata()
 
     if (is.null(inFile) | n_organism() < 2)
       return(NULL)
@@ -499,8 +519,8 @@ shinyServer(function(input, output,session) {
 
     #test if QC data are available
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-    inFile <- input$metadataFile
-
+    #inFile <- input$metadataFile
+    inFile <- path_metadata()
 
     # get all unique wells
     all_wells <- sort(unique(unlist(rv$data$fw)))
@@ -549,7 +569,6 @@ shinyServer(function(input, output,session) {
 
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
-
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -582,6 +601,9 @@ shinyServer(function(input, output,session) {
           signs = c(signs,0)
         }
       }
+
+      #fix division by 0
+      if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
 
       # define color for each bar based on significance and direction of effect
       myPalette = rep('grey',length(all_wells))
@@ -662,13 +684,13 @@ shinyServer(function(input, output,session) {
     content = function(file) {
       #test if QC data are available
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-      inFile <- input$metadataFile
+
+      inFile <- path_metadata()
       if(n_organism() > 1){
         if (is.null(inFile)) return(NULL)
 
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
-
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -732,15 +754,15 @@ shinyServer(function(input, output,session) {
               signs = c(signs,1)
             }
 
-            pvals = c(pvals,-log10(tmp2))
+            pvals = c(pvals,tmp2)
           }else{
             or <- c(or,0)
-            pvals = c(pvals,0) # pvalue is -log10(1) if no growth was detected in the two groups
+            pvals = c(pvals,1)
             # TODO: does it happen as we supposedly filter the wells with no growth beforehand?
             signs = c(signs,0)
           }
         }
-
+        if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
         db = cbind(all_wells,or,pvals)
         colnames(db) = c('wellID','oddRatio','pval')
       }else{
@@ -756,9 +778,11 @@ shinyServer(function(input, output,session) {
   # manual annotated categories comparison
   output$manualAnnoPlot <- renderPlotly({
 
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     #test if QC data are available
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-    inFile <- input$metadataFile
+    inFile <- path_metadata()
     if(n_organism() > 1){
       if (is.null(inFile))
         return(NULL)
@@ -845,9 +869,9 @@ shinyServer(function(input, output,session) {
           signs = c(signs,0)
         }
       }
-
+      if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
       # if OR is infinite, we should draw it (replace it by 10)
-      if((idx <- length(which(is.infinite(or) & pvals > -log10(0.05)))) > 0) or[which(is.infinite(or) & pvals > -log10(0.05) )] = 10*sign(or)[which(is.infinite(or) & pvals > -log10(0.05))]
+      #if((idx <- length(which(is.infinite(or) & pvals > -log10(0.05)))) > 0) or[which(is.infinite(or) & pvals > -log10(0.05) )] = 10*sign(or)[which(is.infinite(or) & pvals > -log10(0.05))]
 
 
       # define color for each bar based on significance and direction of effect
@@ -858,9 +882,6 @@ shinyServer(function(input, output,session) {
       names.legend = rep("non significant",length(myPalette))
       names.legend[which(myPalette == 'darkgreen')] = paste0("enriched in ",levels(pheno)[1])
       names.legend[which(myPalette == 'darkviolet')] = paste0("enriched in ",levels(pheno)[2])
-      #names.legend = factor(names.legend,levels=c("non significant",
-      #                                           paste0("enriched in ",levels(pheno)[1]),
-      #                                          paste0("enriched in ",levels(pheno)[2])))
 
 
       t <- list(
@@ -929,10 +950,11 @@ shinyServer(function(input, output,session) {
 
     filename = "results_categories.csv",
     content = function(file) {
-
+      #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+      if(is.null(rv$anno)) return(NULL)
       #test if QC data are available
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-      inFile <- input$metadataFile
+      inFile <- path_metadata()
       if(n_organism() > 1){
         if (is.null(inFile))
           return(NULL)
@@ -1018,7 +1040,9 @@ shinyServer(function(input, output,session) {
           }
         }
 
+        if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
         db = cbind(levels(all_categories),or,10^-pvals)
+
         colnames(db) = c('Category','oddRatio','pval')
       }else{
         for(category in levels(all_categories)){
@@ -1042,7 +1066,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedCatInfoWell <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source.cat")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding category information"))
@@ -1083,10 +1108,11 @@ shinyServer(function(input, output,session) {
 
   # chemoinformatic cluster comparison
   output$chemoinfoPlot <- renderPlotly({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     #test if QC data are available
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-    inFile <- input$metadataFile
+    inFile <- path_metadata()
 
     if(n_organism() > 1){
       if (is.null(inFile))
@@ -1172,8 +1198,9 @@ shinyServer(function(input, output,session) {
         }
       }
 
+      if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
       # if OR is infinite, we should draw it (replace it by 10)
-      if((idx <- length(which(is.infinite(or) & pvals > -log10(0.05)))) > 0) or[which(is.infinite(or) & pvals > -log10(0.05) )] = 10*sign(or)[which(is.infinite(or) & pvals > -log10(0.05))]
+      #if((idx <- length(which(is.infinite(or) & pvals > -log10(0.05)))) > 0) or[which(is.infinite(or) & pvals > -log10(0.05) )] = 10*sign(or)[which(is.infinite(or) & pvals > -log10(0.05))]
 
 
       # define color for each bar based on significance and direction of effect
@@ -1250,10 +1277,11 @@ shinyServer(function(input, output,session) {
 
     filename = "results_chemocluster.csv",
     content = function(file) {
-
+      #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+      if(is.null(rv$anno)) return(NULL)
       #test if QC data are available
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-      inFile <- input$metadataFile
+      inFile <- path_metadata()
       if(n_organism()>1){
         if (is.null(inFile))
           return(NULL)
@@ -1337,7 +1365,7 @@ shinyServer(function(input, output,session) {
             signs = c(signs,0)
           }
         }
-
+        if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
         db = cbind(levels(all_categories),or,10^-pvals)
         colnames(db) = c('Chemocluster','oddRatio','pval')
       }else{
@@ -1361,7 +1389,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedClusterInfoWell <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding cluster information"))
@@ -1400,7 +1429,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedClusterInfoKEGG <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding cluster information"))
@@ -1438,6 +1468,8 @@ shinyServer(function(input, output,session) {
   })
 
   output$heatmapPlot <- renderPlotly({
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     if(input$showSourceName2){
       labrow = rv$matchTable$sourceName[match(rownames(rv$anno$simMA),rv$matchTable$wellID)]
       labcol = rv$matchTable$sourceName[match(rownames(rv$anno$simMA),rv$matchTable$wellID)]
@@ -1454,11 +1486,24 @@ shinyServer(function(input, output,session) {
   #####################################################
   # KINETIC PANEL
 
+
+  shinyFileChoose(input, 'metadataFileKine', roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+                                                 'home'=home_dir,getVolumes()()),  filetypes=c('txt'),defaultRoot = 'library')
+
+  path_metadata_kine <- reactive({
+    if(!is.null(input$metadataFileKine)){
+      return(parseFilePaths(roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+                                                                   'home'=home_dir,getVolumes()()), input$metadataFileKine))
+      }else{
+        return(NULL)
+      }
+  })
+
   #metadata print
   output$metadataTableKine <- renderTable({
-    inFile <- input$metadataFileKine
+    inFile <- path_metadata_kine()
 
-    if (is.null(inFile))
+    if (is.null(inFile) | n_organism() < 2)
       return(NULL)
     head(read.table(inFile$datapath, header = FALSE),5)
   })
@@ -1469,7 +1514,7 @@ shinyServer(function(input, output,session) {
 
     #test if QC data are available
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-    inFile <- input$metadataFileKine
+    inFile <- path_metadata_kine()#input$metadataFileKine
 
     if(n_organism() > 1){
       if (is.null(inFile))
@@ -1533,7 +1578,7 @@ shinyServer(function(input, output,session) {
         signs = c(signs,sign(tmp.or))
         pvals = c(pvals,-log10(tmp2))
       }
-
+      if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
       # define color for each bar based on significance and direction of effect
       myPalette = rep('grey',length(all_wells))
       myPalette[which(abs(signs*pvals) > -log10(0.05) & signs < 0)] = 'darkgreen'
@@ -1609,7 +1654,7 @@ shinyServer(function(input, output,session) {
 
       #test if QC data are available
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-      inFile <- input$metadataFileKine
+      inFile <- path_metadata_kine()#input$metadataFileKine
       if(n_organism()>1){
         if (is.null(inFile))
           return(NULL)
@@ -1673,8 +1718,8 @@ shinyServer(function(input, output,session) {
           signs = c(signs,sign(tmp.or))
           pvals = c(pvals,-log10(tmp2))
         }
-
-        db = cbind(all_wells,or,pvals)
+        if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
+        db = cbind(all_wells,or,10^-pvals)
         colnames(db) = c('wellID','CohenD','pval')
       }else{
         for(j in 1:ncol(tmp)){
@@ -1690,10 +1735,11 @@ shinyServer(function(input, output,session) {
 
   # manual annotated categories comparison
   output$manualAnnoPlotKine <- renderPlotly({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     #test if QC data are available
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-    inFile <- input$metadataFileKine
+    inFile <- path_metadata_kine()#input$metadataFileKine
     if(n_organism()>1){
       if (is.null(inFile))
         return(NULL)
@@ -1767,7 +1813,7 @@ shinyServer(function(input, output,session) {
         signs = c(signs,sign(tmp.or))
         pvals = c(pvals,-log10(tmp2))
       }
-
+      if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
       # define color for each bar based on significance and direction of effect
       myPalette = rep('grey',nlevels(as.factor(as.character(all_categories))))
       myPalette[which(abs(signs*pvals) > -log10(0.05) & signs < 0)] = 'darkgreen'
@@ -1836,9 +1882,11 @@ shinyServer(function(input, output,session) {
 
     filename = "results_categoriesKine.csv",
     content = function(file) {
+      #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+      if(is.null(rv$anno)) return(NULL)
       #test if QC data are available
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-      inFile <- input$metadataFileKine
+      inFile <- path_metadata_kine()#input$metadataFileKine
       if(n_organism()>1){
 
         if (is.null(inFile))
@@ -1909,7 +1957,7 @@ shinyServer(function(input, output,session) {
           signs = c(signs,sign(tmp.or))
           pvals = c(pvals,-log10(tmp2))
         }
-
+        if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
         db = cbind(levels(all_categories),or,10^-pvals)
         colnames(db) = c('Category','CohenD','pval')
       }else{
@@ -1930,7 +1978,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedCatInfoWellKine <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source.cat.kine")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding category information"))
@@ -1971,10 +2020,11 @@ shinyServer(function(input, output,session) {
 
   # chemoinformatic cluster comparison
   output$chemoinfoPlotKine <- renderPlotly({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     #test if QC data are available
     if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-    inFile <- input$metadataFileKine
+    inFile <- path_metadata_kine()#input$metadataFileKine
     if(n_organism()>1){
       if (is.null(inFile))
         return(NULL)
@@ -2043,7 +2093,7 @@ shinyServer(function(input, output,session) {
         signs = c(signs,sign(tmp.or))
         pvals = c(pvals,-log10(tmp2))
       }
-
+      if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
       # define color for each bar based on significance and direction of effect
       myPalette = rep('grey',nlevels(all_categories))
       myPalette[which(abs(signs*pvals) > -log10(0.05) & signs < 0)] = 'darkgreen'
@@ -2113,9 +2163,11 @@ shinyServer(function(input, output,session) {
 
     filename = "results_chemoclusterKine.csv",
     content = function(file) {
+      #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+      if(is.null(rv$anno)) return(NULL)
       #test if QC data are available
       if(is.null(rv$data)) print('User is required to run the quality control analysis first.')
-      inFile <- input$metadataFileKine
+      inFile <- path_metadata_kine()#input$metadataFileKine
       if(n_organism()>1){
         if (is.null(inFile))
           return(NULL)
@@ -2184,7 +2236,7 @@ shinyServer(function(input, output,session) {
           signs = c(signs,sign(tmp.or))
           pvals = c(pvals,-log10(tmp2))
         }
-
+        if(length(which(is.infinite(or))) > 0) or[which(is.infinite(or))] <- 0
         db = cbind(levels(all_categories),or,10^-pvals)
         colnames(db) = c('Chemocluster','CohenD','pval')
       }else{
@@ -2203,7 +2255,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedClusterInfoWellKine <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source.kine")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding cluster information"))
@@ -2223,7 +2276,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedClusterInfoNameKine <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source.kine")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding cluster information"))
@@ -2242,7 +2296,8 @@ shinyServer(function(input, output,session) {
 
   # Coupled hover event
   output$selectedClusterInfoKEGGKine <- renderText({
-
+    #this option is only available for Biolog plates already annotated (AN, PM1, PM2A)
+    if(is.null(rv$anno)) return(NULL)
     # Read in hover data
     eventdata <- event_data("plotly_click", source = "source.kine")
     validate(need(!is.null(eventdata), "Click on one bar to show corresponding cluster information"))
