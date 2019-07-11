@@ -17,6 +17,11 @@ if(!require(shiny)){
   library(shiny)
  }
  
+ if(!require(rlang)){
+  install.packages('rlang')
+  library(rlang)
+ }
+ 
 if(!require(devtools)){
   install.packages('devtools')
   library(devtools)
