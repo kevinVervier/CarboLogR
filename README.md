@@ -12,6 +12,11 @@
 
 User can easily install the package directly from Github.
 ```
+if(!require(shiny)){
+  install.packages('shiny')
+  library(shiny)
+ }
+ 
 if(!require(devtools)){
   install.packages('devtools')
   library(devtools)
