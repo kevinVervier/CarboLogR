@@ -47,7 +47,8 @@ install_missing_packages = function(pkg, version = NULL, verbose = TRUE){
 ################################################################################
 # Define list of package names and required versions.
 ################################################################################
-deppkgs = c(MASS='7.3-51.4',
+deppkgs = c(rlang='0.4.0',
+            MASS='7.3-51.4',
             cluster='2.1.0',
             DT="0.5",
             effsize = "0.7.1",
