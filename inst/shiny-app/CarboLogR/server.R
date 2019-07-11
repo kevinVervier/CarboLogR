@@ -6,10 +6,10 @@
 shinyServer(function(input, output,session) {
 
   # plate data location
-  shinyDirChoose(input, 'plate_directory', session=session, roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()),defaultRoot = 'library')
+  shinyDirChoose(input, 'plate_directory', session=session, roots=c('library'=paste(.libPaths()[1],'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()),defaultRoot = 'library')
 
   path_plate <- reactive({
-    return(print(parseDirPath(roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()), input$plate_directory)))
+    return(print(parseDirPath(roots=c('library'=paste(.libPaths()[1],'/CarboLogR/extdata',sep=''),'home'=home_dir,getVolumes()()), input$plate_directory)))
   })
 
   #number of organism function
@@ -492,13 +492,13 @@ shinyServer(function(input, output,session) {
   },width=800,height=600)
 
 
-  shinyFileChoose(input, 'metadataFile', roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+  shinyFileChoose(input, 'metadataFile', roots=c('library'=paste(.libPaths()[1],'/CarboLogR/extdata',sep=''),
                                                  'home'=home_dir,getVolumes()()),  filetypes=c('txt'),defaultRoot = 'library')
 
 
   path_metadata <- reactive({
     if(!is.null(input$metadataFile)){
-      return(parseFilePaths(roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+      return(parseFilePaths(roots=c('library'=paste(.libPaths()[1],'/CarboLogR/extdata',sep=''),
                                                                    'home'=home_dir,getVolumes()()), input$metadataFile))
     }else{
       return(NULL)
@@ -1493,12 +1493,12 @@ shinyServer(function(input, output,session) {
   # KINETIC PANEL
 
 
-  shinyFileChoose(input, 'metadataFileKine', roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+  shinyFileChoose(input, 'metadataFileKine', roots=c('library'=paste(.libPaths()[1],'/CarboLogR/extdata',sep=''),
                                                  'home'=home_dir,getVolumes()()),  filetypes=c('txt'),defaultRoot = 'library')
 
   path_metadata_kine <- reactive({
     if(!is.null(input$metadataFileKine)){
-      return(parseFilePaths(roots=c('library'=paste(.libPaths(),'/CarboLogR/extdata',sep=''),
+      return(parseFilePaths(roots=c('library'=paste(.libPaths()[1],'/CarboLogR/extdata',sep=''),
                                                                    'home'=home_dir,getVolumes()()), input$metadataFileKine))
       }else{
         return(NULL)
