@@ -91,7 +91,7 @@ SummarizeGrowthByPlate <- function (plate,record.name='test', t_trim = 0, bg_cor
 load('data/pubchem_kegg/cluster_info.Rdata')
 
 # load the match table between well Id and carbon source names
-match_table <- read.delim('data/biolog_wells.txt',header=F)
+match_table <- read.delim('data/biolog_wells.txt',header=F,fileEncoding="latin1")
 colnames(match_table) = c('plateID','wellID','sourceName','pubchem','manualAnno','chemoCluster')
 
 # load Cluster by cluster information (should be merged with similarity matrix)
