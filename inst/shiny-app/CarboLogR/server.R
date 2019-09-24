@@ -569,6 +569,8 @@ shinyServer(function(input, output,session) {
 
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
+      # reorder metadata to fit the Growth profile order
+      metadata = metadata[match(names(rv$data$fits),metadata$V1),]
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -581,9 +583,14 @@ shinyServer(function(input, output,session) {
       # Fisher test per well
       for(j in 1:ncol(tmp)){
         if(any(tmp[,j] == 1) & any(tmp[,j] == 0)){
-          stats = fisher.test(x = tmp[,j],y=pheno)
+          tab = table(tmp[,j],pheno)
+          if(length(idx<-which(tab == 0)) > 0){ # fix potential infinite odd ratio
+            tab = tab + 0.5
+          }
+          #stats = fisher.test(x = tmp[,j],y=pheno)
+          stats = fisher.test(x=tab)
           tmp2 = stats$p.val
-          or <- c(or,log2(stats$estimate))
+          or <- c(or,log2((tab[1,1] * tab[2,2]) / (tab[1,2] * tab[2,1])))
           # get pvalue sign (direction of enrichment)
           tab = table(tmp[,j],pheno)
           if((tab[2,1]/(tab[1,1]+tab[2,1])) < (tab[2,2]/(tab[1,2]+tab[2,2]))){
@@ -693,6 +700,8 @@ shinyServer(function(input, output,session) {
 
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
+        # reorder metadata to fit the Growth profile order
+        metadata = metadata[match(names(rv$data$fits),metadata$V1),]
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -744,9 +753,14 @@ shinyServer(function(input, output,session) {
         # Fisher test per well
         for(j in 1:ncol(tmp)){
           if(any(tmp[,j] == 1) & any(tmp[,j] == 0)){
-            stats = fisher.test(x = tmp[,j],y=pheno)
+            tab = table(tmp[,j],pheno)
+            if(length(idx<-which(tab == 0)) > 0){ # fix potential infinite odd ratio
+              tab = tab + 0.5
+            }
+            #stats = fisher.test(x = tmp[,j],y=pheno)
+            stats = fisher.test(x=tab)
             tmp2 = stats$p.val
-            or <- c(or,log2(stats$estimate))
+            or <- c(or,log2((tab[1,1] * tab[2,2]) / (tab[1,2] * tab[2,1])))
             # get pvalue sign (direction of enrichment)
             tab = table(tmp[,j],pheno)
             if((tab[2,1]/(tab[1,1]+tab[2,1])) < (tab[2,2]/(tab[1,2]+tab[2,2]))){
@@ -790,7 +804,8 @@ shinyServer(function(input, output,session) {
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
-
+      # reorder metadata to fit the Growth profile order
+      metadata = metadata[match(names(rv$data$fits),metadata$V1),]
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -851,9 +866,14 @@ shinyServer(function(input, output,session) {
         tmp.vec = as.vector(tmp[,idx])
 
         if(any( tmp.vec == 1) & any( tmp.vec == 0)){
-          stats = fisher.test(x = tmp.vec,y=pheno.vec)
+          tab = table(tmp.vec,pheno.vec)
+          if(length(idx<-which(tab == 0)) > 0){ # fix potential infinite odd ratio
+            tab = tab + 0.5
+          }
+          #stats = fisher.test(x = tmp[,j],y=pheno)
+          stats = fisher.test(x=tab)
           tmp2 = stats$p.val
-          or <- c(or,log2(stats$estimate))
+          or <- c(or,log2((tab[1,1] * tab[2,2]) / (tab[1,2] * tab[2,1])))
           # get pvalue sign (direction of enrichment)
           tab = table( tmp.vec, pheno.vec)
           if((tab[2,1]/(tab[1,1]+tab[2,1])) < (tab[2,2]/(tab[1,2]+tab[2,2]))){
@@ -964,7 +984,8 @@ shinyServer(function(input, output,session) {
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
-
+        # reorder metadata to fit the Growth profile order
+        metadata = metadata[match(names(rv$data$fits),metadata$V1),]
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -1023,9 +1044,14 @@ shinyServer(function(input, output,session) {
           tmp.vec = as.vector(tmp[,idx])
 
           if(any( tmp.vec == 1) & any( tmp.vec == 0)){
-            stats = fisher.test(x = tmp.vec,y=pheno.vec)
+            tab = table(tmp.vec,pheno.vec)
+            if(length(idx<-which(tab == 0)) > 0){ # fix potential infinite odd ratio
+              tab = tab + 0.5
+            }
+            #stats = fisher.test(x = tmp[,j],y=pheno)
+            stats = fisher.test(x=tab)
             tmp2 = stats$p.val
-            or <- c(or,log2(stats$estimate))
+            or <- c(or,log2((tab[1,1] * tab[2,2]) / (tab[1,2] * tab[2,1])))
             # get pvalue sign (direction of enrichment)
             tab = table( tmp.vec, pheno.vec)
             if((tab[2,1]/(tab[1,1]+tab[2,1])) < (tab[2,2]/(tab[1,2]+tab[2,2]))){
@@ -1123,7 +1149,8 @@ shinyServer(function(input, output,session) {
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
-
+      # reorder metadata to fit the Growth profile order
+      metadata = metadata[match(names(rv$data$fits),metadata$V1),]
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -1181,9 +1208,14 @@ shinyServer(function(input, output,session) {
         tmp.vec = as.vector(tmp[,idx])
 
         if(any( tmp.vec == 1) & any( tmp.vec == 0)){
-          stats = fisher.test(x = tmp.vec,y=pheno.vec)
+          tab = table(tmp.vec,pheno.vec)
+          if(length(idx<-which(tab == 0)) > 0){ # fix potential infinite odd ratio
+            tab = tab + 0.5
+          }
+          #stats = fisher.test(x = tmp[,j],y=pheno)
+          stats = fisher.test(x=tab)
           tmp2 = stats$p.val
-          or <- c(or,log2(stats$estimate))
+          or <- c(or,log2((tab[1,1] * tab[2,2]) / (tab[1,2] * tab[2,1])))
           # get pvalue sign (direction of enrichment)
           tab = table( tmp.vec, pheno.vec)
           if((tab[2,1]/(tab[1,1]+tab[2,1])) < (tab[2,2]/(tab[1,2]+tab[2,2]))){
@@ -1293,7 +1325,8 @@ shinyServer(function(input, output,session) {
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
-
+        # reorder metadata to fit the Growth profile order
+        metadata = metadata[match(names(rv$data$fits),metadata$V1),]
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -1351,9 +1384,14 @@ shinyServer(function(input, output,session) {
           tmp.vec = as.vector(tmp[,idx])
 
           if(any( tmp.vec == 1) & any( tmp.vec == 0)){
-            stats = fisher.test(x = tmp.vec,y=pheno.vec)
+            tab = table(tmp.vec,pheno.vec)
+            if(length(idx<-which(tab == 0)) > 0){ # fix potential infinite odd ratio
+              tab = tab + 0.5
+            }
+            #stats = fisher.test(x = tmp[,j],y=pheno)
+            stats = fisher.test(x=tab)
             tmp2 = stats$p.val
-            or <- c(or,log2(stats$estimate))
+            or <- c(or,log2((tab[1,1] * tab[2,2]) / (tab[1,2] * tab[2,1])))
             # get pvalue sign (direction of enrichment)
             tab = table( tmp.vec, pheno.vec)
             if((tab[2,1]/(tab[1,1]+tab[2,1])) < (tab[2,2]/(tab[1,2]+tab[2,2]))){
@@ -1527,7 +1565,8 @@ shinyServer(function(input, output,session) {
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
-
+      # reorder metadata to fit the Growth profile order
+      metadata = metadata[match(names(rv$data$fits),metadata$V1),]
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -1668,7 +1707,8 @@ shinyServer(function(input, output,session) {
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
-
+        # reorder metadata to fit the Growth profile order
+        metadata = metadata[match(names(rv$data$fits),metadata$V1),]
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -1753,7 +1793,8 @@ shinyServer(function(input, output,session) {
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
-
+      # reorder metadata to fit the Growth profile order
+      metadata = metadata[match(names(rv$data$fits),metadata$V1),]
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -1903,7 +1944,8 @@ shinyServer(function(input, output,session) {
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
-
+        # reorder metadata to fit the Growth profile order
+        metadata = metadata[match(names(rv$data$fits),metadata$V1),]
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -2040,7 +2082,8 @@ shinyServer(function(input, output,session) {
         return(NULL)
       #read metadata
       metadata = read.table(inFile$datapath, header = FALSE)
-
+      # reorder metadata to fit the Growth profile order
+      metadata = metadata[match(names(rv$data$fits),metadata$V1),]
       #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
       #TODO: implement a match/check
       pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
@@ -2183,7 +2226,8 @@ shinyServer(function(input, output,session) {
           return(NULL)
         #read metadata
         metadata = read.table(inFile$datapath, header = FALSE)
-
+        # reorder metadata to fit the Growth profile order
+        metadata = metadata[match(names(rv$data$fits),metadata$V1),]
         #define phenotype vector: for now it assumes that the metadata file is sorted in the same order than the organisms files
         #TODO: implement a match/check
         pheno = rep(metadata[,2],times=sapply(rv$data$fits,length))
